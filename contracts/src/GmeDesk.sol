@@ -53,6 +53,7 @@ contract GmeDesk is Wired {
     error InsufficientLiquid();
     error ZeroAmount();
     error TransferFailed();
+    error EmptyMetadata();
 
     event Deposited(uint256 assets, uint256 shares);
     event Withdrawn(uint256 assets, uint256 shares);
@@ -81,8 +82,9 @@ contract GmeDesk is Wired {
 
     // ── ERC-4626 share accounting ──
 
-    string public constant name = "Moass Fund GME Desk";
-    string public constant symbol = "mGME";
+    /// @dev Set once at construction; composed from the deployment's branding.
+    string public name;
+    string public symbol;
     uint8 public immutable decimals;
 
     uint256 public totalSupply;
@@ -121,8 +123,17 @@ contract GmeDesk is Wired {
         _;
     }
 
-    constructor(address asset_, address manager_, address[] memory venues_) {
+    constructor(
+        address asset_,
+        address manager_,
+        address[] memory venues_,
+        string memory name_,
+        string memory symbol_
+    ) {
         if (asset_ == address(0) || manager_ == address(0)) revert ZeroAddress();
+        if (bytes(name_).length == 0 || bytes(symbol_).length == 0) revert EmptyMetadata();
+        name = name_;
+        symbol = symbol_;
         asset = IERC20(asset_);
         manager = manager_;
         decimals = IERC20Metadata(asset_).decimals();

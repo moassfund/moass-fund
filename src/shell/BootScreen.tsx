@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { IconTile } from '../ui'
+import { TOKEN } from '../config'
 
 export function BootScreen({ onDone }: { onDone: () => void }) {
   useEffect(() => {
@@ -18,7 +19,7 @@ export function BootScreen({ onDone }: { onDone: () => void }) {
         <IconTile emoji="🚀" tint="#e31b23" />
         <div className="boot-word">
           <small>Dumb Money Corp.</small>
-          Moass Fund<sup>XP</sup>
+          {TOKEN.name}<sup>XP</sup>
         </div>
       </div>
       <div className="boot-track"><i /></div>

@@ -41,7 +41,9 @@ contract Launch is Script {
             v3Factory: vm.envAddress("V3_FACTORY"),
             yieldVault: address(0), // the desk, deployed below
             guardian: vm.envAddress("GUARDIAN"),
-            teamWallet: vm.envAddress("TEAM_WALLET")
+            teamWallet: vm.envAddress("TEAM_WALLET"),
+            tokenName: vm.envOr("TOKEN_NAME", string("Moass Fund")),
+            tokenSymbol: vm.envOr("TOKEN_SYMBOL", string("MOASS"))
         });
 
         address venue = vm.envAddress("DESK_VENUES");
@@ -58,7 +60,9 @@ contract Launch is Script {
         //    can be built before anything else exists.
         address[] memory venues = new address[](1);
         venues[0] = venue;
-        GmeDesk desk = new GmeDesk(ext.reserve, ext.teamWallet, venues);
+        GmeDesk desk = new GmeDesk(
+            ext.reserve, ext.teamWallet, venues, string.concat(ext.tokenName, " GME Desk"), "mGME"
+        );
         ext.yieldVault = address(desk);
 
         // 2. The canonical pair. Uniswap's createPair only records addresses,

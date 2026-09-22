@@ -32,7 +32,7 @@ contract StakingTest is Test {
         bob = makeAddr("bob");
 
         moass = new MockERC20("Moass Fund", "MOASS", 9);
-        sMoass = new StakedMOASS();
+        sMoass = new StakedMOASS("Staked MOASS", "sMOASS");
         staking = new Staking(address(moass), address(sMoass), Constants.STAKING_WARMUP_EPOCHS);
 
         distributor = new MockDistributor(moass, address(staking));
@@ -359,7 +359,7 @@ contract StakingTest is Test {
     // ── Helpers ──
 
     function _deployWithWarmup(uint256 epochs) internal returns (Staking warm, StakedMOASS s) {
-        s = new StakedMOASS();
+        s = new StakedMOASS("Staked MOASS", "sMOASS");
         warm = new Staking(address(moass), address(s), epochs);
         MockDistributor d = new MockDistributor(moass, address(warm));
         s.wire(address(warm));

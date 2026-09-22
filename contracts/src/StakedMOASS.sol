@@ -17,9 +17,11 @@ contract StakedMOASS is IsMOASS, Wired {
     error NotStaking();
     error InsufficientBalance();
     error InsufficientAllowance();
+    error EmptyMetadata();
 
-    string public constant name = "Staked MOASS";
-    string public constant symbol = "sMOASS";
+    /// @dev Set once at construction; mirrors MOASS's own metadata.
+    string public name;
+    string public symbol;
     uint8 public constant decimals = 9;
 
     /// @dev Inventory ceiling: 5B whole MOASS of fragments. The RFV hard cap
@@ -37,7 +39,10 @@ contract StakedMOASS is IsMOASS, Wired {
     mapping(address => uint256) private _gonBalances;
     mapping(address => mapping(address => uint256)) public allowance;
 
-    constructor() {
+    constructor(string memory name_, string memory symbol_) {
+        if (bytes(name_).length == 0 || bytes(symbol_).length == 0) revert EmptyMetadata();
+        name = name_;
+        symbol = symbol_;
         _totalSupply = INITIAL_FRAGMENTS;
         gonsPerFragment = TOTAL_GONS / INITIAL_FRAGMENTS;
     }

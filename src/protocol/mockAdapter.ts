@@ -1,6 +1,6 @@
 // Simulated protocol. Everything is a deterministic function of wall-clock time
 // (so numbers are stable across reloads) plus per-user state in localStorage.
-import { EPOCH_HOURS } from '../config'
+import { EPOCH_HOURS, TOKEN, QUOTE } from '../config'
 import {
   apyFromRebase, backingPerToken, bondPayout, bondPrice, claimable, clamp, longLiqPrice,
   premium as premiumOf, roiOverDays, runwayDays,
@@ -83,7 +83,7 @@ function treasuryAt(t: number) {
     { id: 'long', label: '3x GME Long', kind: 'leveraged-long', valueUsd: long.equityUsd, detail: `${long.sizeUnits.toFixed(0)} GME notional, isolated margin` },
     { id: 'spot', label: 'GME (spot)', kind: 'spot', valueUsd: spotUnits * gme, detail: `${spotUnits.toFixed(0)} GME from bond sales` },
     { id: 'usdg', label: 'USDG reserve', kind: 'stable', valueUsd: usdg, detail: 'Dry powder and margin top-ups' },
-    { id: 'pol', label: 'MOASS-GME LP', kind: 'lp', valueUsd: pol, detail: 'Protocol-owned liquidity' },
+    { id: 'pol', label: `${TOKEN.symbol}-${QUOTE.symbol} LP`, kind: 'lp', valueUsd: pol, detail: 'Protocol-owned liquidity' },
   ]
   return { totalUsd: positions.reduce((s, p) => s + p.valueUsd, 0), long, positions }
 }
@@ -148,7 +148,7 @@ function marketsAt(t: number, priceUsd: number, user?: StoredUser): BondMarket[]
   const gme = gmeAt(t)
   const defs = [
     { id: 'gme', asset: 'GME' as const, label: 'GME', icon: '🎮', px: gme, base: 0.06, amp: 0.035, vest: 5, cap: 6_000, seed: 11 },
-    { id: 'lp', asset: 'LP' as const, label: 'MOASS-GME LP', icon: '🌊', px: 2 * Math.sqrt(priceUsd * gme), base: 0.09, amp: 0.04, vest: 5, cap: 4_000, seed: 12 },
+    { id: 'lp', asset: 'LP' as const, label: `${TOKEN.symbol}-${QUOTE.symbol} LP`, icon: '🌊', px: 2 * Math.sqrt(priceUsd * gme), base: 0.09, amp: 0.04, vest: 5, cap: 4_000, seed: 12 },
     { id: 'usdg', asset: 'USDG' as const, label: 'USDG', icon: '💵', px: 1, base: 0.04, amp: 0.025, vest: 3, cap: 3_000, seed: 13 },
   ]
   return defs.map((d) => {
@@ -234,7 +234,7 @@ export const mockAdapter: ProtocolAdapter = {
 
   async stake(address, amount) {
     const u = loadUser(address)
-    requireAmount(amount, u.moass, 'MOASS')
+    requireAmount(amount, u.moass, TOKEN.symbol)
     const tx = await fakeTx()
     u.moass -= amount
     u.shares += amount / indexAt(Date.now())
@@ -245,7 +245,7 @@ export const mockAdapter: ProtocolAdapter = {
   async unstake(address, amount) {
     const u = loadUser(address)
     const index = indexAt(Date.now())
-    requireAmount(amount, u.shares * index, 'sMOASS')
+    requireAmount(amount, u.shares * index, TOKEN.staked)
     const tx = await fakeTx()
     u.shares = Math.max(0, u.shares - amount / index)
     u.moass += amount
@@ -261,7 +261,7 @@ export const mockAdapter: ProtocolAdapter = {
     const field = market.asset === 'GME' ? 'gme' : market.asset === 'USDG' ? 'usdg' : 'lp'
     requireAmount(amount, u[field], market.asset)
     const payout = bondPayout(amount, market.assetPriceUsd, market.bondPriceUsd)
-    if (payout > market.remainingMoass) throw new Error(`Only ${market.remainingMoass.toFixed(2)} MOASS left in this bond today.`)
+    if (payout > market.remainingMoass) throw new Error(`Only ${market.remainingMoass.toFixed(2)} ${TOKEN.symbol} left in this bond today.`)
     const tx = await fakeTx()
     u[field] -= amount
     u.bonds.unshift({

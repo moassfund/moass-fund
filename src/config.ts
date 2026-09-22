@@ -1,5 +1,21 @@
 // Single place for naming, chain and links. Swap placeholders before launch.
-export const TOKEN = { symbol: 'MOASS', staked: 'sMOASS', name: 'Moass Fund' } as const
+//
+// Naming is env-driven so a test deployment can carry a throwaway identity
+// without touching code: set VITE_TOKEN_NAME and VITE_TOKEN_SYMBOL to the same
+// values passed to the deploy script as TOKEN_NAME and TOKEN_SYMBOL. The
+// defaults are the real launch identity.
+const envStr = (key: string, fallback: string) => {
+  const v = import.meta.env?.[key] as string | undefined
+  return v && v.trim() ? v.trim() : fallback
+}
+
+const tokenSymbol = envStr('VITE_TOKEN_SYMBOL', 'MOASS')
+
+export const TOKEN = {
+  symbol: tokenSymbol,
+  staked: `s${tokenSymbol}`,
+  name: envStr('VITE_TOKEN_NAME', 'Moass Fund'),
+}
 export const QUOTE = { symbol: 'GME', name: 'GameStop (tokenized)' } as const
 export const STABLE = { symbol: 'USDG' } as const
 

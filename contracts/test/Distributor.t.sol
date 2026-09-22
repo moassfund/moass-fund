@@ -37,7 +37,7 @@ contract DistributorTest is Test {
 
         moass = new MockERC20("Moass Fund", "MOASS", 9);
         usdg = new MockERC20("USDG", "USDG", 6);
-        sMoass = new StakedMOASS();
+        sMoass = new StakedMOASS("Staked MOASS", "sMOASS");
         sMoass.wire(staking);
 
         treasury = new MockTreasury(moass, address(usdg));

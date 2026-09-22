@@ -14,6 +14,7 @@ pragma solidity ^0.8.24;
 contract ShareCertificate {
     error Soulbound();
     error NotGenesisBond();
+    error EmptyMetadata();
     error NonexistentToken();
     error ZeroAddress();
 
@@ -25,8 +26,9 @@ contract ShareCertificate {
         uint32 shareholderNumber;
     }
 
-    string public constant name = "Moass Fund Founding Shareholder Certificate";
-    string public constant symbol = "MOASS-FS";
+    /// @dev Set once at construction; composed from the deployment's branding.
+    string public name;
+    string public symbol;
 
     address public immutable genesisBond;
     uint256 public nextId = 1;
@@ -34,9 +36,12 @@ contract ShareCertificate {
     mapping(address => uint256) public certificateOf; // 0 = none
     mapping(uint256 => Certificate) public certificates;
 
-    constructor(address genesisBond_) {
+    constructor(address genesisBond_, string memory name_, string memory symbol_) {
         if (genesisBond_ == address(0)) revert ZeroAddress();
+        if (bytes(name_).length == 0 || bytes(symbol_).length == 0) revert EmptyMetadata();
         genesisBond = genesisBond_;
+        name = name_;
+        symbol = symbol_;
     }
 
     /// @notice Records a purchase: mints on a wallet's first purchase, then

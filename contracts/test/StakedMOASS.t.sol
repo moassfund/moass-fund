@@ -26,7 +26,7 @@ contract StakedMOASSTest is Test {
         alice = makeAddr("alice");
         bob = makeAddr("bob");
 
-        s = new StakedMOASS();
+        s = new StakedMOASS("Staked MOASS", "sMOASS");
         s.wire(staking);
     }
 
@@ -64,20 +64,20 @@ contract StakedMOASSTest is Test {
     }
 
     function test_wire_revertsForNonDeployer() public {
-        StakedMOASS fresh = new StakedMOASS();
+        StakedMOASS fresh = new StakedMOASS("Staked MOASS", "sMOASS");
         vm.prank(alice);
         vm.expectRevert(Wired.NotDeployer.selector);
         fresh.wire(staking);
     }
 
     function test_wire_revertsOnZeroAddress() public {
-        StakedMOASS fresh = new StakedMOASS();
+        StakedMOASS fresh = new StakedMOASS("Staked MOASS", "sMOASS");
         vm.expectRevert(Wired.ZeroAddress.selector);
         fresh.wire(address(0));
     }
 
     function test_rebase_revertsBeforeWiring() public {
-        StakedMOASS fresh = new StakedMOASS();
+        StakedMOASS fresh = new StakedMOASS("Staked MOASS", "sMOASS");
         vm.expectRevert(Wired.NotWired.selector);
         fresh.rebase(1e9, 1);
     }

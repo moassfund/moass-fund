@@ -25,7 +25,7 @@ import {
   type PublicClient,
 } from 'viem'
 import { getWalletClient, switchChain, waitForTransactionReceipt } from '@wagmi/core'
-import { CHAIN, EPOCHS_PER_DAY } from '../config'
+import { CHAIN, EPOCHS_PER_DAY, TOKEN, QUOTE } from '../config'
 import { wagmiConfig, robinhoodChain } from './wagmi'
 import {
   bondDepositoryAbi,
@@ -419,7 +419,7 @@ function buildPositions(
   if (polUsd > 0) {
     out.push({
       id: 'pol',
-      label: 'MOASS-GME LP',
+      label: `${TOKEN.symbol}-${QUOTE.symbol} LP`,
       kind: 'lp',
       valueUsd: polUsd,
       detail: 'Protocol-owned liquidity, valued at intrinsic',
@@ -430,7 +430,7 @@ function buildPositions(
 
 const MARKET_META: Record<number, { label: string; icon: string; asset: BondMarket['asset'] }> = {
   0: { label: 'GME', icon: '🎮', asset: 'GME' },
-  1: { label: 'MOASS-GME LP', icon: '🌊', asset: 'LP' },
+  1: { label: `${TOKEN.symbol}-${QUOTE.symbol} LP`, icon: '🌊', asset: 'LP' },
 }
 
 async function readMarkets(args: {

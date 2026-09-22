@@ -50,7 +50,9 @@ contract IntegrationTest is Test {
 
     /// @dev Genesis parameters, from Constants: $3/MOASS, 50k hard cap,
     ///      2k wallet cap, 15k minimum, 7-day window, 70/30 treasury/POL.
-    uint256 internal constant WALLET_CAP = 2_000e6;
+    /// @dev Derived, never duplicated: these tests must track Constants.
+    ///      The reserve stand-in is 6 decimals, so the wad scales down by 1e12.
+    uint256 internal constant WALLET_CAP = Constants.GENESIS_WALLET_CAP_WAD / 1e12;
 
     function setUp() public {
         vm.warp(1_800_000_000);
@@ -81,7 +83,9 @@ contract IntegrationTest is Test {
                 v3Factory: address(v3Factory),
                 yieldVault: address(vault),
                 guardian: guardian,
-                teamWallet: teamWallet
+                teamWallet: teamWallet,
+                tokenName: "Moass Fund",
+                tokenSymbol: "MOASS"
             })
         );
 
@@ -144,9 +148,9 @@ contract IntegrationTest is Test {
 
     function test_purchase_recordsASoulboundCertificate() public {
         vm.prank(alice);
-        genesis.purchase(1_000e6);
+        genesis.purchase(WALLET_CAP / 2);
 
-        assertEq(genesis.purchasedRaw(alice), 1_000e6);
+        assertEq(genesis.purchasedRaw(alice), WALLET_CAP / 2);
         assertEq(genesis.registryLength(), 1);
 
         ShareCertificate cert = ShareCertificate(d.certificate);
@@ -170,12 +174,12 @@ contract IntegrationTest is Test {
 
         vm.prank(alice);
         vm.expectRevert(GenesisBond.SaleClosed.selector);
-        genesis.purchase(100e6);
+        genesis.purchase(WALLET_CAP / 20);
     }
 
     function test_finalize_revertsBelowTheMinimumRaise() public {
         vm.prank(alice);
-        genesis.purchase(1_000e6);
+        genesis.purchase(WALLET_CAP / 2);
         skip(Constants.GENESIS_DEADLINE + 1);
 
         vm.expectRevert(GenesisBond.CannotFinalize.selector);
@@ -184,14 +188,14 @@ contract IntegrationTest is Test {
 
     function test_refund_isAvailableWhenTheSaleFails() public {
         vm.prank(alice);
-        genesis.purchase(1_000e6);
+        genesis.purchase(WALLET_CAP / 2);
         skip(Constants.GENESIS_DEADLINE + 1);
 
         uint256 before = reserve.balanceOf(alice);
         vm.prank(alice);
         genesis.refund();
 
-        assertEq(reserve.balanceOf(alice) - before, 1_000e6, "money back if the raise misses");
+        assertEq(reserve.balanceOf(alice) - before, WALLET_CAP / 2, "money back if the raise misses");
     }
 
     function test_refund_revertsOnceTheSaleSucceeded() public {
@@ -306,9 +310,10 @@ contract IntegrationTest is Test {
         // 4. Bond reserves for discounted MOASS.
         vm.startPrank(bob);
         reserve.approve(address(depo), type(uint256).max);
-        // Sized under the per-epoch throttle: 0.25% of a ~6,500 supply is only
-        // about 16 MOASS, so a large bond would be rejected outright.
-        (, uint256 payout) = depo.deposit(0, 30e6, type(uint256).max, bob);
+        // Sized under the per-epoch throttle (BOND_EPOCH_CAP_BPS of supply),
+        // expressed against the wallet cap so it tracks the genesis constants
+        // instead of assuming a fixed supply.
+        (, uint256 payout) = depo.deposit(0, WALLET_CAP * 3 / 200, type(uint256).max, bob);
         vm.stopPrank();
         assertGt(payout, 0);
 
@@ -339,7 +344,7 @@ contract IntegrationTest is Test {
 
         for (uint256 i = 0; i < 5; i++) {
             uint256 before = treasury.backingPerToken();
-            depo.deposit(0, 20e6, type(uint256).max, bob);
+            depo.deposit(0, WALLET_CAP / 100, type(uint256).max, bob);
             assertGe(treasury.backingPerToken(), before, "a bond never dilutes the floor");
             _advanceWithKeeper(Constants.EPOCH_LENGTH);
         }
@@ -353,7 +358,7 @@ contract IntegrationTest is Test {
         vm.prank(alice);
         genesis.claim();
 
-        uint256 amount = 100e9;
+        uint256 amount = moass.balanceOf(alice) / 2;
         vm.prank(alice);
         moass.transfer(address(pair), amount);
 
@@ -389,7 +394,7 @@ contract IntegrationTest is Test {
         for (uint256 i = 0; i < 10; i++) {
             _advanceEpochs(1);
             vm.prank(bob);
-            depo.deposit(0, 20e6, type(uint256).max, bob);
+            depo.deposit(0, WALLET_CAP / 100, type(uint256).max, bob);
 
             assertLe(
                 moass.totalSupply() * Constants.MOASS_UNIT,

@@ -52,7 +52,8 @@ contract IntegrationGmeTest is Test {
     address internal bob;
 
     /// @dev GME is 18 decimals, unlike the 6-decimal stablecoin upstream uses.
-    uint256 internal constant WALLET_CAP = 2_000e18;
+    /// @dev Derived, never duplicated: these tests must track Constants.
+    uint256 internal constant WALLET_CAP = Constants.GENESIS_WALLET_CAP_WAD;
 
     function setUp() public {
         vm.warp(1_800_000_000);
@@ -78,7 +79,7 @@ contract IntegrationGmeTest is Test {
 
         address[] memory venues = new address[](1);
         venues[0] = venue;
-        desk = new GmeDesk(address(gme), teamWallet, venues);
+        desk = new GmeDesk(address(gme), teamWallet, venues, "Moass Fund GME Desk", "mGME");
 
         MockV2Factory v2Factory = new MockV2Factory();
         MockV3Factory v3Factory = new MockV3Factory();
@@ -94,7 +95,9 @@ contract IntegrationGmeTest is Test {
                 v3Factory: address(v3Factory),
                 yieldVault: address(desk),
                 guardian: teamWallet,
-                teamWallet: teamWallet
+                teamWallet: teamWallet,
+                tokenName: "Moass Fund",
+                tokenSymbol: "MOASS"
             })
         );
 

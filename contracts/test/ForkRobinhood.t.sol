@@ -72,7 +72,7 @@ contract ForkRobinhoodTest is Test {
 
         address[] memory venues = new address[](1);
         venues[0] = teamWallet;
-        desk = new GmeDesk(GME, teamWallet, venues);
+        desk = new GmeDesk(GME, teamWallet, venues, "Moass Fund GME Desk", "mGME");
 
         address pairAddress = IUniswapV2Factory(V2_FACTORY).createPair(predictedMoass, GME);
         pair = IUniswapV2Pair(pairAddress);
@@ -86,7 +86,9 @@ contract ForkRobinhoodTest is Test {
                 v3Factory: V3_FACTORY,
                 yieldVault: address(desk),
                 guardian: teamWallet,
-                teamWallet: teamWallet
+                teamWallet: teamWallet,
+                tokenName: "Moass Fund",
+                tokenSymbol: "MOASS"
             })
         );
 

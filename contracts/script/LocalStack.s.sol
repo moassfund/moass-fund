@@ -38,7 +38,13 @@ contract LocalStack is Script {
 
         address[] memory venues = new address[](1);
         venues[0] = teamWallet;
-        GmeDesk desk = new GmeDesk(address(gme), teamWallet, venues);
+        GmeDesk desk = new GmeDesk(
+            address(gme),
+            teamWallet,
+            venues,
+            string.concat(vm.envOr("TOKEN_NAME", string("Moass Fund")), " GME Desk"),
+            "mGME"
+        );
 
         // The pair must exist before the protocol is built against it, and it
         // needs MOASS's address. Predicted, then asserted after deployment so a
@@ -55,7 +61,9 @@ contract LocalStack is Script {
                 v3Factory: address(v3Factory),
                 yieldVault: address(desk),
                 guardian: teamWallet,
-                teamWallet: teamWallet
+                teamWallet: teamWallet,
+                tokenName: vm.envOr("TOKEN_NAME", string("Moass Fund")),
+                tokenSymbol: vm.envOr("TOKEN_SYMBOL", string("MOASS"))
             })
         );
         require(d.moass == predictedMoass, "MOASS address prediction failed");

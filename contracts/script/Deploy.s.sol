@@ -50,6 +50,10 @@ struct Externals {
     address yieldVault;
     address guardian;
     address teamWallet;
+    /// @dev Token branding, set once at construction. A deployment carries its
+    ///      own name so a test launch never squats the real ticker.
+    string tokenName;
+    string tokenSymbol;
 }
 
 /// @title DeployLib — constructs and wires the whole protocol in one call.
@@ -76,8 +80,12 @@ library DeployLib {
 
         // Tokens and staking. sMOASS's entire inventory is assigned to Staking
         // at wiring, so Staking must exist first.
-        d.moass = address(new MOASS(ext.guardian));
-        d.sMoass = address(new StakedMOASS());
+        d.moass = address(new MOASS(ext.guardian, ext.tokenName, ext.tokenSymbol));
+        d.sMoass = address(
+            new StakedMOASS(
+                string.concat("Staked ", ext.tokenSymbol), string.concat("s", ext.tokenSymbol)
+            )
+        );
         d.staking = address(new Staking(d.moass, d.sMoass, Constants.STAKING_WARMUP_EPOCHS));
 
         // Pricing and custody.
@@ -99,7 +107,13 @@ library DeployLib {
         d.genesisBond = address(
             new GenesisBond(d.moass, ext.reserve, d.treasury, d.staking, ext.pair, d.oracle)
         );
-        d.certificate = address(new ShareCertificate(d.genesisBond));
+        d.certificate = address(
+            new ShareCertificate(
+                d.genesisBond,
+                string.concat(ext.tokenName, " Founding Shareholder Certificate"),
+                string.concat(ext.tokenSymbol, "-FS")
+            )
+        );
         d.pTeam = address(new PTeam(d.moass, ext.reserve, d.treasury, ext.teamWallet));
         d.inverseBond =
             address(new InverseBond(d.moass, ext.reserve, d.treasury, d.oracle, d.genesisBond));

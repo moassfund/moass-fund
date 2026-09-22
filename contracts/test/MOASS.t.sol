@@ -40,7 +40,7 @@ contract MOASSTest is Test {
         alice = makeAddr("alice");
         bob = makeAddr("bob");
 
-        moass = new MOASS(guardian);
+        moass = new MOASS(guardian, "Moass Fund", "MOASS");
         usdg = new MockERC20("USDG", "USDG", 6);
         pair = new MockPair(address(moass), address(usdg));
         v2Factory = new MockV2Factory();
@@ -77,7 +77,7 @@ contract MOASSTest is Test {
     }
 
     function test_mint_revertsBeforeWiring() public {
-        MOASS fresh = new MOASS(guardian);
+        MOASS fresh = new MOASS(guardian, "Moass Fund", "MOASS");
         vm.expectRevert(Wired.NotWired.selector);
         fresh.mint(alice, 1e9);
     }

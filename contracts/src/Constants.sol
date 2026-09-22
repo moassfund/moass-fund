@@ -48,11 +48,25 @@ library Constants {
     uint256 internal constant PTEAM_STRIKE_WAD = 1e18;
 
     // ── Genesis (specs/genesis.md) ──
-    uint256 internal constant GENESIS_PRICE_WAD = 3e18; // TUNE
-    /// @dev Revised 2026-07-12 (was 300k / 10k / 100k).
-    uint256 internal constant GENESIS_HARD_CAP_WAD = 50_000e18; // TUNE
-    uint256 internal constant GENESIS_WALLET_CAP_WAD = 2_000e18; // TUNE
-    uint256 internal constant GENESIS_MIN_RAISE_WAD = 15_000e18; // TUNE
+    /// @dev DENOMINATED IN THE RESERVE, which is GME here and USDG upstream.
+    ///      The upstream numbers were dollar amounts because USDG is a dollar;
+    ///      carried over unchanged they meant ~24x more, since GME is a share
+    ///      and not a dollar. Re-denominated 2026-09-22 to the upstream's
+    ///      actual intent (3 / 2k / 15k / 50k dollars) at GME ~= $24.10.
+    ///
+    ///      These are fixed GME amounts, so the dollar target drifts with GME.
+    ///      Re-check them against the live price shortly before launch.
+    ///
+    ///      PRICE IS NOT FREE TO LOWER. Distributor clamps emissions to zero
+    ///      whenever totalSupply (WAD) exceeds Treasury.rfv(), i.e. every token
+    ///      must be backed by at least ONE UNIT OF THE RESERVE. With 70% of the
+    ///      raise reaching the treasury, the floor is 1/0.7 = 1.43 GME; below it
+    ///      the protocol mints nothing, forever. 3 GME leaves 2.1 GME of backing
+    ///      per token. Only the caps below were re-denominated.
+    uint256 internal constant GENESIS_PRICE_WAD = 3e18; // ~$72.30, floor is 1.43
+    uint256 internal constant GENESIS_HARD_CAP_WAD = 2_000e18; // ~$48,200
+    uint256 internal constant GENESIS_WALLET_CAP_WAD = 80e18; // ~$1,928
+    uint256 internal constant GENESIS_MIN_RAISE_WAD = 625e18; // ~$15,062
     uint256 internal constant GENESIS_VEST = 5 days; // TUNE
     uint256 internal constant GENESIS_DEADLINE = 7 days; // TUNE (FINAL 2026-07-12)
     uint256 internal constant TREASURY_SPLIT_BPS = 7000; // TUNE

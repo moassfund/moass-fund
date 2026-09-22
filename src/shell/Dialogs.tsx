@@ -3,6 +3,7 @@ import { useConnect } from 'wagmi'
 import { isMock } from '../protocol/hooks'
 import { ProgressBar } from '../ui'
 import { dialogs, useDialogStore, type DialogIcon } from './dialogStore'
+import { TOKEN } from '../config'
 
 const ICONS: Record<DialogIcon, string> = { info: 'ℹ️', warn: '⚠️', error: '❌', question: '❓' }
 
@@ -40,7 +41,7 @@ function ConnectWallet() {
             <p>No wallet detected in this browser. Install one, or open this page inside your wallet app's browser.</p>
           ) : (
             <>
-              <p>Pick a wallet to log on to Moass Fund XP.</p>
+              <p>Pick a wallet to log on to {TOKEN.name} XP.</p>
               {list.map((c) => (
                 <button key={c.uid} type="button" className="btn" disabled={isPending} onClick={() => connect({ connector: c }, { onSuccess: dialogs.closeConnect })}>
                   {c.name === 'Injected' ? 'Browser wallet' : c.name}

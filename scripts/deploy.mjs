@@ -163,11 +163,23 @@ async function main() {
   ok(`desk venue ${deskVenue}`)
 
   // ── External contracts, on mainnet only ──
+  // ── Branding ──
+  // Set once at construction and permanent afterwards, so this is printed
+  // loudly: a test launch under the real ticker cannot be taken back.
+  const tokenName = env.TOKEN_NAME || 'Moass Fund'
+  const tokenSymbol = env.TOKEN_SYMBOL || 'MOASS'
+  if (!/^[A-Za-z0-9]{2,11}$/.test(tokenSymbol)) {
+    throw new Error(`TOKEN_SYMBOL must be 2-11 alphanumeric characters, got "${tokenSymbol}"`)
+  }
+  ok(`token      ${tokenName} ($${tokenSymbol}, s${tokenSymbol})`)
+
   const forgeEnv = {
     PRIVATE_KEY: key.startsWith('0x') ? key : `0x${key}`,
     GUARDIAN: guardian,
     TEAM_WALLET: teamWallet,
     DESK_VENUES: deskVenue,
+    TOKEN_NAME: tokenName,
+    TOKEN_SYMBOL: tokenSymbol,
   }
 
   if (target.externals) {
@@ -197,6 +209,10 @@ async function main() {
   // ── Last chance ──
   if (target.key === 'mainnet' && !skipConfirm) {
     console.log('')
+    warn(`This deploys as "${tokenName}" ($${tokenSymbol}). The name is set at`)
+    warn('construction and there is no setter: it is permanent. Set TOKEN_NAME and')
+    warn('TOKEN_SYMBOL in .env if this is a test and should not use the real ticker.')
+    console.log('')
     warn('This is mainnet. Parameters in Constants.sol are permanent once deployed,')
     warn('and the wiring cannot be redone. If anything is wrong you redeploy from')
     warn('scratch at a new address.')
@@ -224,6 +240,10 @@ async function main() {
     VITE_DATA_SOURCE: 'chain',
     VITE_RPC_URL: target.rpc,
     VITE_CHAIN_ID: String(target.id),
+    // Must match the TOKEN_* the contracts were constructed with, or the UI
+    // names a token that does not exist at these addresses.
+    VITE_TOKEN_NAME: tokenName,
+    VITE_TOKEN_SYMBOL: tokenSymbol,
     VITE_ADDR_MOASS: a.moass,
     VITE_ADDR_SMOASS: a.sMoass,
     VITE_ADDR_STAKING: a.staking,

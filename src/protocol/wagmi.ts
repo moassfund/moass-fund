@@ -1,7 +1,7 @@
 import { createConfig, http, type CreateConnectorFn } from 'wagmi'
 import { injected, walletConnect } from 'wagmi/connectors'
 import { defineChain } from 'viem'
-import { CHAIN } from '../config'
+import { CHAIN, TOKEN } from '../config'
 
 export const robinhoodChain = defineChain({
   id: CHAIN.id,
@@ -78,7 +78,7 @@ if (projectId) {
         projectId,
         showQrModal: true,
         metadata: {
-          name: 'Moass Fund',
+          name: TOKEN.name,
           description: 'An OHM-style reserve protocol paired with GME.',
           url: typeof window !== 'undefined' ? window.location.origin : 'https://moass.fund',
           icons: [],

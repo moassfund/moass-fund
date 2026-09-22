@@ -30,9 +30,12 @@ contract MOASS is IMOASS, Wired {
     error CannotExemptPair();
     error InsufficientBalance();
     error InsufficientAllowance();
+    error EmptyMetadata();
 
-    string public constant name = "Moass Fund";
-    string public constant symbol = "MOASS";
+    /// @dev Set once at construction so a deployment can carry its own
+    ///      branding. Immutable in practice: there is no setter.
+    string public name;
+    string public symbol;
     uint8 public constant decimals = 9;
 
     uint256 public totalSupply;
@@ -58,8 +61,11 @@ contract MOASS is IMOASS, Wired {
     /// @notice queued exemption → timestamp at which it becomes executable.
     mapping(address => uint64) public exemptQueuedAt;
 
-    constructor(address guardian_) {
+    constructor(address guardian_, string memory name_, string memory symbol_) {
         guardian = _nonZero(guardian_);
+        if (bytes(name_).length == 0 || bytes(symbol_).length == 0) revert EmptyMetadata();
+        name = name_;
+        symbol = symbol_;
     }
 
     /// @notice One-time wiring (see Wired). `initialTaxedPairs` implements the

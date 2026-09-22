@@ -33,7 +33,7 @@ contract GmeDeskTest is Test {
 
         address[] memory venues = new address[](1);
         venues[0] = venue;
-        desk = new GmeDesk(address(gme), manager, venues);
+        desk = new GmeDesk(address(gme), manager, venues, "Moass Fund GME Desk", "mGME");
         desk.wire(treasury);
 
         gme.mint(treasury, 10_000e18);
@@ -72,7 +72,7 @@ contract GmeDeskTest is Test {
     function test_wire_onlyDeployer() public {
         address[] memory venues = new address[](1);
         venues[0] = venue;
-        GmeDesk fresh = new GmeDesk(address(gme), manager, venues);
+        GmeDesk fresh = new GmeDesk(address(gme), manager, venues, "Moass Fund GME Desk", "mGME");
 
         vm.prank(attacker);
         vm.expectRevert(Wired.NotDeployer.selector);
@@ -82,7 +82,7 @@ contract GmeDeskTest is Test {
     function test_depositRevertsBeforeWiring() public {
         address[] memory venues = new address[](1);
         venues[0] = venue;
-        GmeDesk fresh = new GmeDesk(address(gme), manager, venues);
+        GmeDesk fresh = new GmeDesk(address(gme), manager, venues, "Moass Fund GME Desk", "mGME");
 
         vm.prank(treasury);
         vm.expectRevert(Wired.NotWired.selector);

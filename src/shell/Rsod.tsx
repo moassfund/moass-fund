@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { dialogs, useDialogStore } from './dialogStore'
+import { TOKEN } from '../config'
 
-const TEXT = `A problem has been detected and Moass Fund has been shut down to prevent damage to your portfolio.
+const TEXT = `A problem has been detected and ${TOKEN.name} has been shut down to prevent damage to your portfolio.
 
 PAPER_HANDS_EXCEPTION
 

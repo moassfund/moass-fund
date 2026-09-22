@@ -127,14 +127,26 @@ const wad = (v: bigint) => Number(formatUnits(v, 18))
 let cached: PublicClient | null = null
 function client(): PublicClient {
   if (!cached) {
-    cached = createPublicClient({ chain: robinhoodChain, transport: http(CHAIN.rpcUrl) })
+    // Bounded, so an unreachable RPC surfaces as an error the UI can show
+    // rather than a window that says "Loading" until the tab is closed.
+    cached = createPublicClient({
+      chain: robinhoodChain,
+      transport: http(CHAIN.rpcUrl, { timeout: 10_000, retryCount: 1 }),
+    })
   }
   return cached
 }
 
+/**
+ * Addresses the app can run without. `genesisBond` only exists while an
+ * offering is live, and a deployment configured before it was wired must not
+ * start failing because a new key was added to CONTRACTS.
+ */
+const OPTIONAL_ADDRESSES = new Set(['genesisBond'])
+
 function requireAddresses() {
   const missing = Object.entries(CONTRACTS)
-    .filter(([, v]) => !v)
+    .filter(([k, v]) => !v && !OPTIONAL_ADDRESSES.has(k))
     .map(([k]) => k)
   if (missing.length) {
     throw new Error(

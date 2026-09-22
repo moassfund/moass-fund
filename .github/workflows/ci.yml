@@ -1,0 +1,46 @@
+# Runs what `npm run check` runs, split so a Solidity failure and a frontend
+# failure are told apart and each job installs only the toolchain it needs.
+#
+# Deployment is deliberately absent. The site ships from Vercel's git
+# integration, and `npm run deploy` is a one-shot irreversible mainnet
+# deployment whose key must never live in CI.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      # Builds against the mock adapter: no addresses, no RPC, no secrets.
+      - run: npm run build
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: forge test -vvv
+        working-directory: contracts
+      # Catches the frontend's ABIs drifting from the contracts they describe.
+      - run: forge build && python3 tools/check_abis.py
+        working-directory: contracts

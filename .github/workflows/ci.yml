@@ -35,7 +35,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Pinned, not floating. The deploy scripts and three test suites predict
+      # the MOASS address from a nonce offset so the canonical pair can be
+      # created before the token exists. Forge counts nonces differently across
+      # releases, so an unpinned toolchain breaks setUp on a version bump with
+      # nothing wrong in the code. Bump this deliberately, with the tests green.
       - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: 1.7.1
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

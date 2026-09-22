@@ -16,6 +16,7 @@ const URL = process.env.SMOKE_URL ?? 'http://localhost:5173/'
 
 /** Deep links, so windows open without depending on icon hit-boxes. */
 const WINDOWS = [
+  ['genesis', 'Founding Offering'],
   ['overview', 'Fund Overview'],
   ['stake', 'Stake'],
   ['bond', 'Bond Desk'],

@@ -57,6 +57,27 @@ export interface Epoch {
   endsAt: number
 }
 
+/**
+ * The founding offering, which exists only before finalize(). Amounts are in
+ * the reserve (GME), because that is what the contract counts. Once `finalized`
+ * flips, the protocol is live and this stops mattering.
+ */
+export interface GenesisOffering {
+  finalized: boolean
+  /** Deadline passed under the minimum: the sale is dead and only refunds work. */
+  failed: boolean
+  raisedGme: number
+  minRaiseGme: number
+  hardCapGme: number
+  walletCapGme: number
+  /** Reserve paid per MOASS */
+  priceGme: number
+  deadline: number
+  vestDays: number
+  /** Wallets on the founding register */
+  shareholders: number
+}
+
 export interface ProtocolSnapshot {
   timestamp: number
   priceUsd: number
@@ -86,6 +107,8 @@ export interface ProtocolSnapshot {
   /** Oldest first, one point per epoch, ~30 days */
   history: HistoryPoint[]
   bonds: BondMarket[]
+  /** Null only when no offering is configured; survives finalization for the vest. */
+  genesis: GenesisOffering | null
 }
 
 export interface UserBond {
@@ -99,10 +122,18 @@ export interface UserBond {
   vestEndsAt: number
 }
 
+export interface UserGenesis {
+  contributedGme: number
+  purchasedMoass: number
+  /** Vested and claimable right now */
+  claimableMoass: number
+}
+
 export interface UserPosition {
   address: string | null
   balances: Record<AssetSymbol, number>
   bonds: UserBond[]
+  genesis: UserGenesis
 }
 
 export interface TxResult {
@@ -118,4 +149,8 @@ export interface ProtocolAdapter {
   unstake(address: string | null, amount: number): Promise<TxResult>
   bond(address: string | null, marketId: string, amount: number): Promise<TxResult>
   claim(address: string | null, bondIds: string[]): Promise<TxResult>
+  /** Founding offering. `amount` is reserve (GME). */
+  genesisPurchase(address: string | null, amount: number): Promise<TxResult>
+  genesisClaim(address: string | null): Promise<TxResult>
+  genesisRefund(address: string | null): Promise<TxResult>
 }

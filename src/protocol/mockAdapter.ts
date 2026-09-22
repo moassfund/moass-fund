@@ -105,7 +105,24 @@ interface StoredUser {
   bonds: UserBond[]
   /** MOASS bonded per market per UTC day, to draw down capacity */
   bondedToday: Record<string, number>
+  /** Reserve put into the simulated founding offering */
+  genesisGme: number
+  genesisClaimed: number
 }
+
+// A simulated offering, open so the Founding Offering window is demoable. The
+// mock protocol is otherwise post-launch; these two do not have to agree,
+// because each window demonstrates its own thing.
+const GENESIS_TERMS = {
+  priceGme: 3,
+  hardCapGme: 2_000,
+  walletCapGme: 80,
+  minRaiseGme: 625,
+  vestDays: 5,
+}
+const GENESIS_DEADLINE = Date.now() + 3 * DAY
+/** Subscribed by everyone who is not you. */
+const GENESIS_OTHERS = 512
 
 const keyFor = (address: string | null) => `moass.mock.v1:${(address ?? 'guest').toLowerCase()}`
 const memory = new Map<string, string>()
@@ -130,6 +147,8 @@ function loadUser(address: string | null): StoredUser {
     gme: 42,
     usdg: 1_000,
     lp: 12,
+    genesisGme: 0,
+    genesisClaimed: 0,
     // one half-vested bond so "My Bonds" is never empty on first open
     bonds: [{
       id: 'seed-1', marketId: 'gme', asset: 'GME', paidAmount: 10, payoutMoass: 52.5,
@@ -180,6 +199,7 @@ function snapshotAt(t: number, user?: StoredUser): ProtocolSnapshot {
   for (let i = 90; i >= 1; i--) history.push(pointAt(startedAt - i * EPOCH_MS))
   history.push(pointAt(t))
   return {
+    genesis: null,
     timestamp: t,
     priceUsd,
     priceGme: priceUsd / gme,
@@ -219,7 +239,17 @@ export const mockAdapter: ProtocolAdapter = {
   kind: 'mock',
 
   async getSnapshot() {
-    return snapshotAt(Date.now(), loadUser(null))
+    const snap = snapshotAt(Date.now(), loadUser(null))
+    const raisedGme = GENESIS_OTHERS + loadUser(null).genesisGme
+    snap.genesis = {
+      ...GENESIS_TERMS,
+      finalized: false,
+      failed: false,
+      raisedGme,
+      deadline: GENESIS_DEADLINE,
+      shareholders: 34 + (loadUser(null).genesisGme > 0 ? 1 : 0),
+    }
+    return snap
   },
 
   async getUser(address) {
@@ -228,6 +258,11 @@ export const mockAdapter: ProtocolAdapter = {
       address,
       balances: { MOASS: u.moass, sMOASS: u.shares * indexAt(Date.now()), GME: u.gme, USDG: u.usdg, LP: u.lp },
       bonds: u.bonds,
+      genesis: {
+        contributedGme: u.genesisGme,
+        purchasedMoass: u.genesisGme / GENESIS_TERMS.priceGme,
+        claimableMoass: Math.max(0, u.genesisGme / GENESIS_TERMS.priceGme - u.genesisClaimed),
+      },
     }
     return position
   },
@@ -286,6 +321,40 @@ export const mockAdapter: ProtocolAdapter = {
     for (const b of due) b.claimedMoass += claimable(b.payoutMoass, b.claimedMoass, now, b.purchasedAt, b.vestEndsAt)
     u.bonds = u.bonds.filter((b) => b.payoutMoass - b.claimedMoass > 1e-9)
     u.moass += total
+    saveUser(address, u)
+    return tx
+  },
+
+  async genesisPurchase(address, amount) {
+    const u = loadUser(address)
+    requireAmount(amount, u.gme, QUOTE.symbol)
+    if (u.genesisGme + amount > GENESIS_TERMS.walletCapGme) {
+      throw new Error(`The wallet cap is ${GENESIS_TERMS.walletCapGme} ${QUOTE.symbol}. You are already in for ${u.genesisGme}.`)
+    }
+    const tx = await fakeTx()
+    u.gme -= amount
+    u.genesisGme += amount
+    saveUser(address, u)
+    return tx
+  },
+
+  async genesisClaim(address) {
+    const u = loadUser(address)
+    const due = u.genesisGme / GENESIS_TERMS.priceGme - u.genesisClaimed
+    if (due <= 0) throw new Error('Nothing vested yet. Founding shares release over 5 days.')
+    const tx = await fakeTx()
+    u.genesisClaimed += due
+    u.moass += due
+    saveUser(address, u)
+    return tx
+  },
+
+  async genesisRefund(address) {
+    const u = loadUser(address)
+    if (u.genesisGme <= 0) throw new Error('You did not subscribe, so there is nothing to refund.')
+    const tx = await fakeTx()
+    u.gme += u.genesisGme
+    u.genesisGme = 0
     saveUser(address, u)
     return tx
   },

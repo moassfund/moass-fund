@@ -235,6 +235,24 @@ async function main() {
   if (!existsSync(path)) throw new Error('deployment finished but wrote no address file')
   const a = JSON.parse(await readFile(path, 'utf8'))
 
+  // Genesis terms live only in Constants.sol: the contract does not expose
+  // them. Read them from the source of truth rather than restating them in the
+  // front end, which is exactly how the caps drifted 24x in the first place.
+  const constantsSol = await readFile(resolve(CONTRACTS, 'src', 'Constants.sol'), 'utf8')
+  const constant = (name, unit) => {
+    const m = constantsSol.match(new RegExp(`${name}\\s*=\\s*([0-9_.]+)(e18)?`))
+    if (!m) throw new Error(`could not read ${name} from Constants.sol`)
+    const n = Number(m[1].replace(/_/g, ''))
+    return unit === 'days' ? n : n
+  }
+  const genesis = {
+    VITE_GENESIS_PRICE: String(constant('GENESIS_PRICE_WAD')),
+    VITE_GENESIS_HARD_CAP: String(constant('GENESIS_HARD_CAP_WAD')),
+    VITE_GENESIS_WALLET_CAP: String(constant('GENESIS_WALLET_CAP_WAD')),
+    VITE_GENESIS_MIN_RAISE: String(constant('GENESIS_MIN_RAISE_WAD')),
+    VITE_GENESIS_VEST_DAYS: String(constant('GENESIS_VEST', 'days')),
+  }
+
   // ── Hand it to the front end ──
   const lines = {
     VITE_DATA_SOURCE: 'chain',
@@ -250,6 +268,8 @@ async function main() {
     VITE_ADDR_DISTRIBUTOR: a.distributor,
     VITE_ADDR_TREASURY: a.treasury,
     VITE_ADDR_BOND_DEPOSITORY: a.bondDepository,
+    VITE_ADDR_GENESIS_BOND: a.genesisBond,
+    ...genesis,
     VITE_ADDR_ORACLE: a.oracle,
     VITE_ADDR_GME_DESK: a.gmeDesk,
     VITE_ADDR_INVERSE_BOND: a.inverseBond,

@@ -30,6 +30,7 @@ TARGETS = {
     "oracleAbi": "PairOracle",
     "gmeDeskAbi": "GmeDesk",
     "inverseBondAbi": "InverseBond",
+    "genesisBondAbi": "GenesisBond",
     "pairAbi": "MockPair",
 }
 

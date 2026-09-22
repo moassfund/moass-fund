@@ -1,7 +1,7 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import { TOKEN, QUOTE } from '../config'
 
-export type AppId = 'overview' | 'stake' | 'bond' | 'treasury' | 'calculator' | 'buy' | 'prospectus' | 'paperhands'
+export type AppId = 'genesis' | 'overview' | 'stake' | 'bond' | 'treasury' | 'calculator' | 'buy' | 'prospectus' | 'paperhands'
 
 export interface AppDef {
   id: AppId
@@ -22,6 +22,7 @@ export interface AppDef {
 // Every app is a default-exported component in src/apps, lazy-loaded on first open.
 export const APPS: AppDef[] = [
   { id: 'overview', title: 'Fund Overview', short: 'Fund Overview', blurb: 'Price, backing, APY, runway', icon: '📈', tint: '#e31b23', w: 760, h: 560, component: lazy(() => import('../apps/Overview')) },
+  { id: 'genesis', title: 'Founding Offering - Setup Wizard', short: 'Founding Offering', blurb: `Get in before there is a market`, icon: '📜', tint: '#c8a02c', w: 560, h: 620, component: lazy(() => import('../apps/Genesis')) },
   { id: 'stake', title: 'Stake.exe', short: 'Stake.exe', blurb: 'Compound every 8 hours', icon: '💎', tint: '#2e9e2e', w: 440, h: 590, component: lazy(() => import('../apps/Stake')) },
   { id: 'bond', title: 'Bond Desk', short: 'Bond Desk', blurb: `${TOKEN.symbol} at a discount, vested`, icon: '🏦', tint: '#f8b636', w: 720, h: 540, component: lazy(() => import('../apps/BondDesk')) },
   { id: 'treasury', title: 'My Treasury', short: 'My Treasury', blurb: 'The 3x GME long, live', icon: '🗄️', tint: '#3a6ea5', w: 800, h: 580, component: lazy(() => import('../apps/Treasury')) },

@@ -107,3 +107,21 @@ export const v3PoolAbi = parseAbi([
   'function token1() view returns (address)',
   'function fee() view returns (uint24)',
 ])
+
+/// The founding offering. `purchase` and `refund` take and return the reserve
+/// (GME) in its own raw units; `claim` returns MOASS. The sale is over when
+/// `finalized` flips, and dead if the deadline passes below the minimum raise.
+export const genesisBondAbi = parseAbi([
+  'function purchase(uint256 reserveAmountRaw)',
+  'function refund()',
+  'function claim() returns (uint256)',
+  'function finalize()',
+  'function finalized() view returns (bool)',
+  'function saleDeadline() view returns (uint64)',
+  'function raisedRaw() view returns (uint256)',
+  'function purchasedRaw(address account) view returns (uint256)',
+  'function purchasedMoassOf(address account) view returns (uint256)',
+  'function claimableMoassOf(address account) view returns (uint256)',
+  'function totalRaised() view returns (uint256)',
+  'function registryLength() view returns (uint256)',
+])

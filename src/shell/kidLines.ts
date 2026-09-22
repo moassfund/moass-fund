@@ -89,6 +89,19 @@ export const KID_POKED: KidLine[] = [
 ]
 
 export const KID_BY_APP: Record<AppId, KidLine[]> = {
+  genesis: [
+    'Getting in before there is a chart. Brave, or early. Usually both.',
+    ['No market yet, so no slippage and no bots. Just a fixed price and your nerve.', 'shadesUp'],
+    'Miss the minimum and everyone gets refunded. That is the one bit with a safety net.',
+    {
+      text: "It looks like you're trying to become a founding shareholder. Would you like help?",
+      options: [
+        { label: 'Why is there no price?', reply: ['Because nothing trades yet. The pool does not exist until this offering closes and pays for it. You are the liquidity, ape.', 'point'] },
+        { label: 'What if nobody shows up?', reply: ['Then the minimum is missed, the fund never starts, and you pull your own money back out. Nothing minted, nothing lost but time.', 'shrug'] },
+        { label: 'Read the terms properly', open: 'prospectus' },
+      ],
+    },
+  ],
   overview: [
     'Backing is what the treasury holds per token. Premium is vibes on top.',
     'Green numbers are a privilege, not a right.',

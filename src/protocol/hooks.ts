@@ -38,3 +38,7 @@ export const useUnstake = () => useTx<number>((a, amount) => adapter.unstake(a, 
 export const useBond = () =>
   useTx<{ marketId: string; amount: number }>((a, v) => adapter.bond(a, v.marketId, v.amount))
 export const useClaim = () => useTx<string[]>((a, bondIds) => adapter.claim(a, bondIds))
+
+export const useGenesisPurchase = () => useTx<number>((a, amount) => adapter.genesisPurchase(a, amount))
+export const useGenesisClaim = () => useTx<void>((a) => adapter.genesisClaim(a))
+export const useGenesisRefund = () => useTx<void>((a) => adapter.genesisRefund(a))

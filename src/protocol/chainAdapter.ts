@@ -29,6 +29,7 @@ import { CHAIN, EPOCHS_PER_DAY, TOKEN, QUOTE } from '../config'
 import { wagmiConfig, robinhoodChain } from './wagmi'
 import {
   bondDepositoryAbi,
+  genesisBondAbi,
   erc20Abi,
   moassAbi,
   gmeDeskAbi,
@@ -59,6 +60,7 @@ import type {
   TxResult,
   UserBond,
   UserPosition,
+  GenesisOffering,
 } from './types'
 
 // Filled by `contracts/script/Deploy.s.sol`, which writes
@@ -75,6 +77,8 @@ export const CONTRACTS = {
   oracle: env('VITE_ADDR_ORACLE'),
   gmeDesk: env('VITE_ADDR_GME_DESK'),
   inverseBond: env('VITE_ADDR_INVERSE_BOND'),
+  /** The founding offering. Only live before finalize; read for the Genesis app. */
+  genesisBond: env('VITE_ADDR_GENESIS_BOND'),
   /** The reserve asset and the token the protocol is paired against. */
   gme: env('VITE_ADDR_GME'),
   /** Stablecoin, used only to price GME for display. */
@@ -88,6 +92,23 @@ export const CONTRACTS = {
    */
   gmeUsdgPool: env('VITE_ADDR_GME_USDG_POOL'),
 } as const
+
+/**
+ * Genesis terms. The contract does not expose its caps or price, so the deploy
+ * script reads them out of Constants.sol and writes them here. Never restate
+ * them by hand: that duplication is how the caps drifted in the first place.
+ */
+const envNum = (key: string, fallback: number) => {
+  const v = Number(env(key))
+  return Number.isFinite(v) && v > 0 ? v : fallback
+}
+const GENESIS_TERMS = {
+  priceGme: envNum('VITE_GENESIS_PRICE', 3),
+  hardCapGme: envNum('VITE_GENESIS_HARD_CAP', 2_000),
+  walletCapGme: envNum('VITE_GENESIS_WALLET_CAP', 80),
+  minRaiseGme: envNum('VITE_GENESIS_MIN_RAISE', 625),
+  vestDays: envNum('VITE_GENESIS_VEST_DAYS', 5),
+}
 
 const MOASS_DECIMALS = 9
 const GME_DECIMALS = 18
@@ -269,6 +290,7 @@ async function getSnapshot(): Promise<ProtocolSnapshot> {
   const gmeChange24h = change24h(history, usdPerGme)
 
   return {
+    genesis: await readGenesis(toBrowserTime),
     timestamp: now,
     priceUsd,
     priceGme,
@@ -547,9 +569,54 @@ const EMPTY_BALANCES: Record<AssetSymbol, number> = {
   LP: 0,
 }
 
+/**
+ * Null only when no offering is configured. It deliberately survives
+ * finalization: buyers still have five days of vesting to claim through.
+ */
+async function readGenesis(toBrowserTime: (chainMs: number) => number): Promise<GenesisOffering | null> {
+  if (!CONTRACTS.genesisBond) return null
+  const c = client()
+  const g = { address: addr(CONTRACTS.genesisBond), abi: genesisBondAbi } as const
+  const [finalized, raisedRaw, deadlineRaw, registryLen] = await Promise.all([
+    c.readContract({ ...g, functionName: 'finalized' }),
+    c.readContract({ ...g, functionName: 'raisedRaw' }),
+    c.readContract({ ...g, functionName: 'saleDeadline' }),
+    c.readContract({ ...g, functionName: 'registryLength' }),
+  ])
+  const raisedGme = num(raisedRaw as bigint, GME_DECIMALS)
+  const deadline = toBrowserTime(Number(deadlineRaw as bigint) * 1000)
+  const done = finalized as boolean
+  return {
+    ...GENESIS_TERMS,
+    finalized: done,
+    failed: !done && Date.now() > deadline && raisedGme < GENESIS_TERMS.minRaiseGme,
+    raisedGme,
+    deadline,
+    shareholders: Number(registryLen as bigint),
+  }
+}
+
+const NO_GENESIS = { contributedGme: 0, purchasedMoass: 0, claimableMoass: 0 }
+
+async function readUserGenesis(who: `0x${string}`) {
+  if (!CONTRACTS.genesisBond) return { ...NO_GENESIS }
+  const c = client()
+  const g = { address: addr(CONTRACTS.genesisBond), abi: genesisBondAbi } as const
+  const [contributed, purchased, claimable] = await Promise.all([
+    c.readContract({ ...g, functionName: 'purchasedRaw', args: [who] }),
+    c.readContract({ ...g, functionName: 'purchasedMoassOf', args: [who] }),
+    c.readContract({ ...g, functionName: 'claimableMoassOf', args: [who] }),
+  ])
+  return {
+    contributedGme: num(contributed as bigint, GME_DECIMALS),
+    purchasedMoass: num(purchased as bigint, MOASS_DECIMALS),
+    claimableMoass: num(claimable as bigint, MOASS_DECIMALS),
+  }
+}
+
 async function getUser(address: string | null): Promise<UserPosition> {
   requireAddresses()
-  if (!address) return { address: null, balances: { ...EMPTY_BALANCES }, bonds: [] }
+  if (!address) return { address: null, balances: { ...EMPTY_BALANCES }, bonds: [], genesis: { ...NO_GENESIS } }
 
   const c = client()
   const who = addr(address)
@@ -598,6 +665,7 @@ async function getUser(address: string | null): Promise<UserPosition> {
 
   return {
     address,
+    genesis: await readUserGenesis(who),
     balances: {
       MOASS: num(moassRaw as bigint, MOASS_DECIMALS),
       sMOASS: num(sMoassRaw as bigint, MOASS_DECIMALS),
@@ -789,7 +857,49 @@ async function claim(address: string | null, _bondIds: string[]): Promise<TxResu
   )
 }
 
+async function genesisPurchase(address: string | null, amount: number): Promise<TxResult> {
+  requireAddresses()
+  if (!address) throw new Error('Connect a wallet first.')
+  if (!CONTRACTS.genesisBond) throw new Error('The founding offering is not configured for this deployment.')
+  const w = await wallet()
+  const value = parseUnits(String(amount), GME_DECIMALS)
+
+  await ensureAllowance(addr(CONTRACTS.gme), addr(CONTRACTS.genesisBond), value, addr(address))
+  return send(() =>
+    w.writeContract({
+      address: addr(CONTRACTS.genesisBond),
+      abi: genesisBondAbi,
+      functionName: 'purchase',
+      args: [value],
+      chain: robinhoodChain,
+      account: w.account,
+    }),
+  )
+}
+
+/** Both of these are argument-free: the contract reads msg.sender. */
+function genesisSelfCall(fn: 'claim' | 'refund') {
+  return async (address: string | null): Promise<TxResult> => {
+    requireAddresses()
+    if (!address) throw new Error('Connect a wallet first.')
+    if (!CONTRACTS.genesisBond) throw new Error('The founding offering is not configured for this deployment.')
+    const w = await wallet()
+    return send(() =>
+      w.writeContract({
+        address: addr(CONTRACTS.genesisBond),
+        abi: genesisBondAbi,
+        functionName: fn,
+        chain: robinhoodChain,
+        account: w.account,
+      }),
+    )
+  }
+}
+
 export const chainAdapter: ProtocolAdapter = {
+  genesisPurchase,
+  genesisClaim: genesisSelfCall('claim'),
+  genesisRefund: genesisSelfCall('refund'),
   kind: 'chain',
   getSnapshot,
   getUser,

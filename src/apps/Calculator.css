@@ -1,0 +1,6 @@
+.calculator-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.calculator-field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 11px; color: var(--ink-soft); }
+.calculator-field-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.calculator-field-row { display: flex; gap: 4px; align-items: stretch; flex-wrap: wrap; }
+.calculator-field-row .field { flex: 1; min-width: 90px; font-variant-numeric: tabular-nums; }
+.calculator-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }

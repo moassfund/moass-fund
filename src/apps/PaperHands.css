@@ -1,0 +1,20 @@
+.paperhands-toolbar {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 6px;
+  background: var(--face-light);
+  border-bottom: 1px solid var(--face-dark);
+}
+
+.paperhands-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+}
+.paperhands-list .listview-wrap {
+  flex: 1;
+  min-height: 0;
+  border: 0;
+}

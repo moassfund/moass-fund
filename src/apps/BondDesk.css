@@ -1,0 +1,5 @@
+.bond-asset { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-weight: 700; }
+.bond-vest { display: flex; align-items: center; gap: 6px; min-width: 110px; }
+.bond-vest > .progress { flex: 1; min-width: 60px; }
+.bond-actions { flex-wrap: wrap; }
+.bond-actions-total { flex-basis: 160px; text-align: right; }

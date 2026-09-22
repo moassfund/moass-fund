@@ -1,0 +1,42 @@
+{
+  "name": "moass-fund",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "start": "node scripts/start.mjs",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm test && npm run contracts:test && npm run contracts:verify && npm run build",
+    "contracts:build": "cd contracts && forge build",
+    "contracts:test": "cd contracts && forge test",
+    "contracts:verify": "cd contracts && forge build && python3 tools/check_abis.py",
+    "indexer": "node --env-file=.env indexer/snapshot.mjs",
+    "indexer:dry": "node --env-file=.env indexer/snapshot.mjs --dry-run --no-poke",
+    "local": "node scripts/local.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.103.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.4",
+    "viem": "^2.56.8",
+    "wagmi": "^2.19.5",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "playwright": "^1.63.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  }
+}

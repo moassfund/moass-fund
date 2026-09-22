@@ -1,0 +1,87 @@
+/* Luna Red design tokens. Tune the palette here, nowhere else. */
+:root {
+  --red-950: #3d0306;
+  --red-900: #5a0509;
+  --red-800: #7d0a10;
+  --red-700: #a30d14;
+  --red-600: #c8141c;
+  --red-500: #e31b23;
+  --red-400: #f2444a;
+  --red-300: #ff6b6f;
+  --red-200: #ffa3a5;
+  --red-100: #fde3e3;
+
+  --green-800: #145214;
+  --green-700: #1f7a1f;
+  --green-600: #2e9e2e;
+  --green-500: #3cb83c;
+  --green-400: #5fd35f;
+  --green-300: #8ee68e;
+
+  --gold: #f8b636;
+
+  --face: #ece9d8;
+  --face-light: #f6f4ea;
+  --face-dark: #d6d2c2;
+  --panel: #fcfcfe;
+  --edge: #aca899;
+  --edge-dark: #716f64;
+  --field-border: #a39a8c;
+  --ink: #1a1a1a;
+  --ink-soft: #55534a;
+  --ink-mute: #8a887d;
+
+  --up: #15803d;
+  --down: #c8141c;
+  --select: #c8141c;
+  --select-ink: #fff;
+  --tip: #ffffe1;
+
+  --font-ui: Tahoma, 'Segoe UI', Verdana, Geneva, sans-serif;
+  --font-title: 'Trebuchet MS', Tahoma, 'Segoe UI', sans-serif;
+  --font-mono: 'Lucida Console', 'Courier New', monospace;
+
+  --taskbar-h: 38px;
+  --titlebar-h: 30px;
+  --gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 48%, rgba(255, 255, 255, 0) 52%);
+  --titlebar-bg: linear-gradient(180deg, var(--red-300) 0%, var(--red-500) 9%, var(--red-600) 40%, var(--red-700) 86%, var(--red-800) 100%);
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  font: 12px/1.4 var(--font-ui);
+  color: var(--ink);
+  background: #140205;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+h1, h2, h3, h4, p { margin: 0; }
+a { color: var(--red-700); }
+.num { font-variant-numeric: tabular-nums; }
+.up { color: var(--up); }
+.down { color: var(--down); }
+.muted { color: var(--ink-soft); }
+
+/* XP scrollbars were pale, not loud: keep the thumb a soft tint of the theme */
+* { scrollbar-color: var(--red-200) #f1efe2; scrollbar-width: auto; }
+*::-webkit-scrollbar { width: 15px; height: 15px; }
+*::-webkit-scrollbar-track { background: #f1efe2; box-shadow: inset 1px 0 #e2dfd0; }
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #fff, var(--red-100) 40%, var(--red-200));
+  border: 1px solid var(--red-300);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover { background: linear-gradient(90deg, var(--red-100), var(--red-200) 40%, var(--red-300)); }
+*::-webkit-scrollbar-corner { background: #f1efe2; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}

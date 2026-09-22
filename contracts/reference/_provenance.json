@@ -1,0 +1,156 @@
+{
+  "chainId": 4663,
+  "contracts": [
+    {
+      "name": "NET",
+      "onchain_name": "NET",
+      "address": "0xCA9c78Dd337A67F6e0077F65F5E9218719d30eDf",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:30:06Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 7
+    },
+    {
+      "name": "StakedNET",
+      "onchain_name": "StakedNET",
+      "address": "0xb773ec2C326B7f98a5a83fc098825492F020a4c7",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:30:32Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 5
+    },
+    {
+      "name": "Staking",
+      "onchain_name": "Staking",
+      "address": "0xB078cc304A0B264C5F3680DC0488954ACcd02E87",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:31:48Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 8
+    },
+    {
+      "name": "Distributor",
+      "onchain_name": "Distributor",
+      "address": "0x79e71F8a8a2912E40687a8820b2dC0fdd2f686b3",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:32:26Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 9
+    },
+    {
+      "name": "Treasury",
+      "onchain_name": "Treasury",
+      "address": "0x04822Ea321A0DEE6F40656172F29312104855d66",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:31:30Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 9
+    },
+    {
+      "name": "BondDepository",
+      "onchain_name": "BondDepository",
+      "address": "0xff32a969A0c567129eECD926D04657728E1980C1",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:34:17Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 10
+    },
+    {
+      "name": "PairOracle",
+      "onchain_name": "PairOracle",
+      "address": "0x929631b33F4070D6f54477fba3FD27566567dAca",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:30:59Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 6
+    },
+    {
+      "name": "TaxCollector",
+      "onchain_name": "TaxCollector",
+      "address": "0x086C58400b8708Ef993f256E12e752dcF0AC918e",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:32:48Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 9
+    },
+    {
+      "name": "GenesisBond",
+      "onchain_name": "GenesisBond",
+      "address": "0x575b7B7c97Ef3E21C82DAeB427899d583e1E913f",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:33:22Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 13
+    },
+    {
+      "name": "InverseBond",
+      "onchain_name": "InverseBond",
+      "address": "0x92166e94Eea5B7799b761653881692f881dFC4C9",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:34:34Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 9
+    },
+    {
+      "name": "PremiumSeller",
+      "onchain_name": "PremiumSeller",
+      "address": "0x346e1a31171A0f7aC73909010b5435768d3B5462",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:34:52Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 10
+    },
+    {
+      "name": "PTeam",
+      "onchain_name": "PTeam",
+      "address": "0x650F58079dAa17ee28928c2F92d22291d038B2B0",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:35:18Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 8
+    },
+    {
+      "name": "ShareCertificate",
+      "onchain_name": "ShareCertificate",
+      "address": "0xfB8058769063519f26FB114631919c0E5254068e",
+      "match": "exact_match",
+      "verifiedAt": "2026-07-16T20:33:40Z",
+      "compiler": "0.8.30+commit.73712a01",
+      "files": 1
+    }
+  ],
+  "files": {
+    "src/BondDepository.sol": "BondDepository",
+    "src/Constants.sol": "NET",
+    "src/Distributor.sol": "Distributor",
+    "src/GenesisBond.sol": "GenesisBond",
+    "src/InverseBond.sol": "InverseBond",
+    "src/NET.sol": "NET",
+    "src/PTeam.sol": "PTeam",
+    "src/PairOracle.sol": "PairOracle",
+    "src/PremiumSeller.sol": "PremiumSeller",
+    "src/ShareCertificate.sol": "GenesisBond",
+    "src/StakedNET.sol": "StakedNET",
+    "src/Staking.sol": "Staking",
+    "src/TaxCollector.sol": "TaxCollector",
+    "src/Treasury.sol": "Treasury",
+    "src/abstract/Wired.sol": "NET",
+    "src/interfaces/IBondDepository.sol": "BondDepository",
+    "src/interfaces/IDistributor.sol": "Staking",
+    "src/interfaces/IGenesisBond.sol": "GenesisBond",
+    "src/interfaces/IInverseBond.sol": "InverseBond",
+    "src/interfaces/INET.sol": "NET",
+    "src/interfaces/IPTEAM.sol": "TaxCollector",
+    "src/interfaces/IPairOracle.sol": "Staking",
+    "src/interfaces/IPremiumSeller.sol": "PremiumSeller",
+    "src/interfaces/IStaking.sol": "Staking",
+    "src/interfaces/ITaxCollector.sol": "TaxCollector",
+    "src/interfaces/ITreasury.sol": "Distributor",
+    "src/interfaces/IsNET.sol": "StakedNET",
+    "src/interfaces/external/IERC20.sol": "NET",
+    "src/interfaces/external/IERC4626.sol": "Treasury",
+    "src/interfaces/external/IUniswapV2.sol": "NET",
+    "src/interfaces/external/IUniswapV3.sol": "NET",
+    "src/libraries/FixedPointMath.sol": "Distributor"
+  }
+}

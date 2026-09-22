@@ -1,0 +1,39 @@
+/* My Treasury: XP explorer layout. Collapses by window width, not viewport. */
+.treasury-shell { container-type: inline-size; }
+.treasury-body { display: flex; height: 100%; min-height: 0; }
+
+.treasury-pane {
+  flex: none; width: 190px; padding: 10px; overflow: auto;
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--titlebar-bg);
+  box-shadow: inset -1px 0 var(--red-900);
+}
+.treasury-box { border-radius: 6px 6px 3px 3px; overflow: hidden; background: var(--panel); box-shadow: 0 1px 3px rgba(0, 0, 0, .35); }
+.treasury-box h3 { padding: 5px 10px; font: bold 12px var(--font-title); color: var(--red-800); background: linear-gradient(90deg, var(--panel), var(--red-100)); border-bottom: 1px solid var(--red-200); }
+.treasury-box-body { display: flex; flex-direction: column; gap: 5px; padding: 8px 10px; font-size: 11px; }
+.treasury-link { display: block; padding: 0; border: 0; background: none; text-align: left; color: var(--red-700); cursor: pointer; }
+.treasury-link:hover { text-decoration: underline; color: var(--red-500); }
+.treasury-link:focus-visible { outline: 1px dotted var(--ink); outline-offset: 2px; }
+
+.treasury-main { flex: 1; min-width: 0; padding: 10px; overflow: auto; background: var(--panel); }
+
+.treasury-hero { padding: 10px; border: 1px solid var(--edge); border-radius: 8px; background: linear-gradient(180deg, var(--panel), var(--face-light)); box-shadow: inset 0 1px var(--panel), 0 1px 3px rgba(0, 0, 0, .12); }
+.treasury-hero-head { flex-wrap: wrap; }
+.treasury-hero-title { font: bold 26px/1.1 var(--font-title); letter-spacing: .5px; color: var(--red-600); text-shadow: 0 1px 0 var(--panel), 0 2px 3px rgba(0, 0, 0, .18); }
+.treasury-badge { position: relative; overflow: hidden; padding: 3px 10px; border: 1px solid var(--red-900); border-radius: 999px; background: var(--titlebar-bg); color: var(--select-ink); font: bold 11px var(--font-title); letter-spacing: .6px; white-space: nowrap; }
+.treasury-badge::before { content: ''; position: absolute; inset: 0; background: var(--gloss); pointer-events: none; }
+.treasury-health-head { flex-wrap: wrap; margin-bottom: 4px; font-size: 11px; color: var(--ink-soft); }
+
+.treasury-alloc { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.treasury-alloc > .grow { flex: 1 1 180px; }
+.treasury-legend { flex: 1 1 160px; min-width: 0; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.treasury-legend li { display: flex; gap: 6px; align-items: center; }
+.treasury-legend i { flex: none; width: 10px; height: 10px; border: 1px solid var(--ink); border-radius: 2px; }
+
+@container (max-width: 600px) {
+  .treasury-body { flex-direction: column; height: auto; }
+  .treasury-pane { width: auto; overflow: visible; flex-direction: row; flex-wrap: wrap; box-shadow: inset 0 -1px var(--red-900); }
+  .treasury-box { flex: 1 1 200px; min-width: 0; }
+  .treasury-main { overflow: visible; flex: none; }
+  .treasury-hero-title { font-size: 20px; }
+}

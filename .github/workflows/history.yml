@@ -1,0 +1,66 @@
+# Writes one history point per hour and keeps the TWAP oracle inside its
+# validity band. Both matter:
+#
+#   - the Overview and Treasury charts need history, and contracts only know
+#     the present;
+#   - a TWAP is readable only from an observation aged 30 minutes to 4 hours,
+#     and Staking.rebase() runs every 8 hours, so without a regular checkpoint
+#     the oracle falls permanently out of band and emissions mint zero.
+#
+# The commit it makes triggers the usual deploy, so the new point ships with
+# the site. No server, no database.
+name: history
+
+on:
+  schedule:
+    # Hourly: comfortably inside the oracle's 4-hour window even if a run fails.
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+# Only one run at a time, and never cancel one mid-commit.
+concurrency:
+  group: history
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Read the protocol and append a point
+        env:
+          VITE_RPC_URL: ${{ vars.VITE_RPC_URL }}
+          VITE_CHAIN_ID: ${{ vars.VITE_CHAIN_ID }}
+          VITE_ADDR_MOASS: ${{ vars.VITE_ADDR_MOASS }}
+          VITE_ADDR_SMOASS: ${{ vars.VITE_ADDR_SMOASS }}
+          VITE_ADDR_TREASURY: ${{ vars.VITE_ADDR_TREASURY }}
+          VITE_ADDR_ORACLE: ${{ vars.VITE_ADDR_ORACLE }}
+          VITE_ADDR_PAIR: ${{ vars.VITE_ADDR_PAIR }}
+          VITE_ADDR_GME: ${{ vars.VITE_ADDR_GME }}
+          VITE_ADDR_GME_USDG_POOL: ${{ vars.VITE_ADDR_GME_USDG_POOL }}
+          # Optional. Without it the run is read-only and says so, and
+          # something else must keep the oracle checkpointed.
+          INDEXER_PRIVATE_KEY: ${{ secrets.INDEXER_PRIVATE_KEY }}
+        run: node indexer/snapshot.mjs
+
+      - name: Commit the new point
+        run: |
+          if git diff --quiet -- public/history.json; then
+            echo "no change"
+            exit 0
+          fi
+          git config user.name "moass-history"
+          git config user.email "history@users.noreply.github.com"
+          git add public/history.json
+          git commit -m "history: $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push

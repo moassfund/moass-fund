@@ -1,0 +1,13 @@
+node_modules
+dist
+.env
+.env.local
+*.log
+.DS_Store
+contracts/deployments/*.json
+.env.testnet
+.env.mainnet
+contracts/deployments/*.json
+contracts/broadcast
+contracts/cache
+contracts/out

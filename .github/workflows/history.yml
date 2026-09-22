@@ -24,6 +24,11 @@ concurrency:
 
 jobs:
   snapshot:
+    # Nothing to index until the protocol is deployed and its addresses are set
+    # as repository variables (Settings > Secrets and variables > Actions >
+    # Variables). Without this guard the hourly run fails forever on a missing
+    # VITE_ADDR_MOASS and buries any real failure in the noise.
+    if: vars.VITE_ADDR_MOASS != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write

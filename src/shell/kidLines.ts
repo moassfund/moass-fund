@@ -102,6 +102,18 @@ export const KID_BY_APP: Record<AppId, KidLine[]> = {
       ],
     },
   ],
+  getgme: [
+    'Bring whatever you have. It comes out the other side as GME.',
+    ['Cross-chain means it arrives in a second transaction you never sign. Leave the window open.', 'point'],
+    {
+      text: "It looks like you're trying to fund a subscription. Would you like help?",
+      options: [
+        { label: 'Why do I need GME?', reply: ['The offering is priced in GME and the treasury holds GME. Dollars do not enter into it.', 'point'] },
+        { label: 'Take me to the offering', open: 'genesis' },
+        { label: 'I already have some', reply: 'Then you are ahead of most people here.' },
+      ],
+    },
+  ],
   overview: [
     'Backing is what the treasury holds per token. Premium is vibes on top.',
     'Green numbers are a privilege, not a right.',

@@ -1,0 +1,10 @@
+/* Get GME window. Every class is prefixed, and colours come from tokens.css. */
+.getgme-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.getgme-field { display: flex; flex-direction: column; gap: 3px; flex: 1 1 130px; min-width: 0; }
+.getgme-field .field { width: 100%; }
+.getgme-out {
+  padding: 8px 10px; margin-bottom: 8px;
+  border: 1px solid var(--edge); border-radius: 3px;
+  background: var(--paper);
+  font-size: 20px; font-weight: bold; text-align: right;
+}

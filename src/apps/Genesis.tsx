@@ -39,6 +39,9 @@ export default function Genesis() {
   const roomLeft = Math.max(0, Math.min(g.walletCapGme - mine.contributedGme, g.hardCapGme - g.raisedGme))
 
   const n = parseAmount(amount)
+  const overCap = n > roomLeft
+  /** Short of balance is a missing prerequisite, not a failed transaction. */
+  const short = Math.max(0, Math.min(n, roomLeft) - user.balances.GME)
   const tooMuch = n > Math.min(user.balances.GME, roomLeft)
   const priceUsd = g.priceGme * gmeUsd
   const youGet = g.priceGme > 0 ? n / g.priceGme : 0
@@ -138,8 +141,19 @@ export default function Genesis() {
                 ['Also minted', 'A founding shareholder certificate, non transferable'],
               ]}
             />
+            {short > 0 && (
+              <Callout icon="🛒" warn>
+                You are {fmtNum(short, 3)} {QUOTE.symbol} short of that ({fmtUsd(short * gmeUsd)}). You can bring
+                funds from another chain and they arrive as {QUOTE.symbol}.
+                <div style={{ marginTop: 6 }}>
+                  <button type="button" className="btn small" onClick={() => useWindowStore.getState().open('getgme')}>
+                    GET {QUOTE.symbol}
+                  </button>
+                </div>
+              </Callout>
+            )}
             <button type="button" className="btn-primary" disabled={n <= 0 || tooMuch} onClick={subscribe}>
-              {tooMuch ? 'Over your cap or balance' : `SUBSCRIBE ${fmtNum(n, 3)} ${QUOTE.symbol}`}
+              {overCap ? 'Over your wallet cap' : short > 0 ? `Need ${fmtNum(short, 3)} more ${QUOTE.symbol}` : `SUBSCRIBE ${fmtNum(n, 3)} ${QUOTE.symbol}`}
             </button>
           </div>
         )}

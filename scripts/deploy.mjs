@@ -23,6 +23,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createPublicClient, defineChain, formatEther, http, isAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
+import { readGenesisConstants } from './constants.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const CONTRACTS = resolve(ROOT, 'contracts')
@@ -236,21 +237,15 @@ async function main() {
   const a = JSON.parse(await readFile(path, 'utf8'))
 
   // Genesis terms live only in Constants.sol: the contract does not expose
-  // them. Read them from the source of truth rather than restating them in the
-  // front end, which is exactly how the caps drifted 24x in the first place.
-  const constantsSol = await readFile(resolve(CONTRACTS, 'src', 'Constants.sol'), 'utf8')
-  const constant = (name, unit) => {
-    const m = constantsSol.match(new RegExp(`${name}\\s*=\\s*([0-9_.]+)(e18)?`))
-    if (!m) throw new Error(`could not read ${name} from Constants.sol`)
-    const n = Number(m[1].replace(/_/g, ''))
-    return unit === 'days' ? n : n
-  }
+  // them. Read from the source of truth rather than restating them, which is
+  // exactly how the caps drifted 24x in the first place.
+  const g = await readGenesisConstants()
   const genesis = {
-    VITE_GENESIS_PRICE: String(constant('GENESIS_PRICE_WAD')),
-    VITE_GENESIS_HARD_CAP: String(constant('GENESIS_HARD_CAP_WAD')),
-    VITE_GENESIS_WALLET_CAP: String(constant('GENESIS_WALLET_CAP_WAD')),
-    VITE_GENESIS_MIN_RAISE: String(constant('GENESIS_MIN_RAISE_WAD')),
-    VITE_GENESIS_VEST_DAYS: String(constant('GENESIS_VEST', 'days')),
+    VITE_GENESIS_PRICE: String(g.priceGme),
+    VITE_GENESIS_HARD_CAP: String(g.hardCapGme),
+    VITE_GENESIS_WALLET_CAP: String(g.walletCapGme),
+    VITE_GENESIS_MIN_RAISE: String(g.minRaiseGme),
+    VITE_GENESIS_VEST_DAYS: String(g.vestSeconds / 86_400),
   }
 
   // ── Hand it to the front end ──

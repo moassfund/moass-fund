@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url'
 import { createServer } from 'node:net'
 import { createPublicClient, createWalletClient, defineChain, http, parseUnits, parseAbi } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
+import { readGenesisConstants } from './constants.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const CONTRACTS = resolve(ROOT, 'contracts')
@@ -187,11 +188,12 @@ async function runGenesis(client, a) {
     await client.waitForTransactionReceipt({ hash })
   }
 
-  // GENESIS_MIN_RAISE_WAD is 15,000, and GENESIS_WALLET_CAP_WAD is 2,000 — so
-  // the sale needs more wallets than anvil hands out by default. Using three
-  // buyers, each is topped up to the cap and the deployer covers the rest.
-  const walletCap = parseUnits('2000', 18)
-  const minRaise = parseUnits('15000', 18)
+  // Read from Constants.sol rather than restated here: these used to be
+  // hardcoded at the old 2,000 / 15,000 and broke the entire local stack the
+  // moment the real caps moved.
+  const genesis = await readGenesisConstants()
+  const walletCap = parseUnits(String(genesis.walletCapGme), 18)
+  const minRaise = parseUnits(String(genesis.minRaiseGme), 18)
 
   let raised = 0n
   const buyers = [...BUYER_KEYS.map(wallet), deployer]
@@ -207,8 +209,8 @@ async function runGenesis(client, a) {
   }
 
   if (raised < minRaise) {
-    // Four wallets at the 2,000 cap only reach 8,000. Mint through extra
-    // throwaway accounts until the floor is met.
+    // Anvil's named accounts may not cover the floor at the current wallet
+    // cap, so mint through extra throwaway accounts until it is met.
     let i = 0
     while (raised < minRaise) {
       const key = `0x${(BigInt(DEPLOYER_KEY) + BigInt(1000 + i++)).toString(16).padStart(64, '0')}`
@@ -228,14 +230,14 @@ async function runGenesis(client, a) {
   }
 
   log(`raised ${raised / 10n ** 18n} GME, closing the sale`)
-  await timeTravel(client, 7 * 24 * 3600 + 60) // past GENESIS_DEADLINE
+  await timeTravel(client, genesis.deadlineSeconds + 60) // past GENESIS_DEADLINE
   await send(deployer, a.genesisBond, 'finalize')
 
-  // Buyers' MOASS vests over 5 days and their GME all went into the sale, so
+  // Buyers' MOASS vests over GENESIS_VEST and their GME all went into the sale, so
   // without this the test wallets are empty and there is nothing to click.
   // Skip the vest, claim for everyone, and hand out GME to bond with.
   log('vesting the genesis allocation and funding the test wallets')
-  await timeTravel(client, 5 * 24 * 3600 + 60) // past GENESIS_VEST
+  await timeTravel(client, genesis.vestSeconds + 60) // past GENESIS_VEST
   for (const w of BUYER_KEYS.map(wallet)) {
     await send(w, a.genesisBond, 'claim')
     await send(deployer, a.gme, 'mint', [w.account.address, parseUnits('200', 18)])

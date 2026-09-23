@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#a30d14" />
-    <meta name="description" content="Moass Fund — an OHM-style reserve protocol paired with $GME. Treasury runs a 3x GME long. Stake, bond, hold." />
+    <meta name="description" content="Moass Fund — an OHM-style reserve protocol paired with $GME. Treasury runs a 2x GME long. Stake, bond, hold." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Moass Fund XP</title>
 
@@ -28,7 +28,44 @@
     <meta name="twitter:description" content="An OHM-style reserve protocol paired with $GME. Stake for rebases, bond for a discount, and watch the treasury run a 3x GME long." />
   </head>
   <body>
-    <div id="root"></div>
+    <style>
+      /* Painted from the HTML, before a byte of JavaScript arrives. Without it
+         the body's #140205 is the entire page for as long as the bundle takes,
+         which on a cold cache or a phone connection reads as a broken site
+         rather than a loading one. Matches the boot screen so the handover is
+         invisible; React clears it the moment it mounts. */
+      .preboot {
+        position: fixed; inset: 0; z-index: 99998;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px;
+        background: #000; color: #fff;
+        font: 12px/1.4 Tahoma, Verdana, Geneva, sans-serif;
+      }
+      .preboot-mark {
+        width: 56px; height: 56px; border-radius: 12px;
+        background: linear-gradient(180deg, #e8555c, #c31820 45%, #8d0f16);
+        box-shadow: inset 0 1px rgba(255,255,255,.6), 0 4px 14px rgba(0,0,0,.6);
+      }
+      .preboot-track {
+        width: 148px; height: 14px; padding: 2px;
+        border: 1px solid #6b6b6b; border-radius: 8px; background: #111;
+      }
+      .preboot-track i {
+        display: block; width: 34px; height: 100%; border-radius: 6px;
+        background: linear-gradient(180deg, #ff5a60, #c31820);
+        animation: preboot-slide 1.1s ease-in-out infinite;
+      }
+      @keyframes preboot-slide { 0% { transform: translateX(0); } 100% { transform: translateX(106px); } }
+      @media (prefers-reduced-motion: reduce) { .preboot-track i { animation: none; } }
+      .preboot-foot { position: absolute; bottom: 14px; color: #8c8c8c; font-size: 11px; }
+    </style>
+
+    <div id="root">
+      <div class="preboot">
+        <div class="preboot-mark"></div>
+        <div class="preboot-track"><i></i></div>
+        <div class="preboot-foot">Starting&hellip;</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

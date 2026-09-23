@@ -145,7 +145,7 @@ export default function Genesis() {
         )}
 
         <Callout icon="⚠️" warn>
-          You are buying before there is a market. Nothing trades until the offering closes and the pool is seeded, and the price is fixed, not discovered. If the raise misses {fmtNum(g.minRaiseGme, 0)} {QUOTE.symbol} you get refunded and nothing launches. If it succeeds, {fmtPct(0.7, 0)} of the money becomes treasury and the rest becomes liquidity you do not own. The treasury runs a 3x {QUOTE.symbol} long that <b>can be liquidated</b>.
+          You are buying before there is a market. Nothing trades until the offering closes and the pool is seeded, and the price is fixed, not discovered. If the raise misses {fmtNum(g.minRaiseGme, 0)} {QUOTE.symbol} you get refunded and nothing launches. If it succeeds, {fmtPct(0.7, 0)} of the money becomes treasury and the rest becomes liquidity you do not own. The treasury runs a 2x {QUOTE.symbol} long that <b>can be liquidated</b>.
           {isMock && ' This is a simulated offering, so none of it is real.'}
         </Callout>
       </div>

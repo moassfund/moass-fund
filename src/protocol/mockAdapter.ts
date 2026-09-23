@@ -48,7 +48,7 @@ const supplyAt = (t: number) => INITIAL_SUPPLY * Math.pow(1 + BASE_RATE * STAKED
 
 const LONG_ENTRY = gmeAt(GENESIS + 2 * DAY)
 const LONG_COLLATERAL = 800_000
-const LONG_LEVERAGE = 3
+const LONG_LEVERAGE = 2
 
 function longAt(t: number): LeveragedLong {
   const markPrice = gmeAt(t)
@@ -80,7 +80,7 @@ function treasuryAt(t: number) {
   const usdg = 520_000 + 7_500 * d
   const pol = (380_000 + 3_000 * d) * Math.sqrt(gme / 28)
   const positions: TreasuryPosition[] = [
-    { id: 'long', label: '3x GME Long', kind: 'leveraged-long', valueUsd: long.equityUsd, detail: `${long.sizeUnits.toFixed(0)} GME notional, isolated margin` },
+    { id: 'long', label: `${LONG_LEVERAGE}x ${QUOTE.symbol} Long`, kind: 'leveraged-long', valueUsd: long.equityUsd, detail: `${long.sizeUnits.toFixed(0)} GME notional, isolated margin` },
     { id: 'spot', label: 'GME (spot)', kind: 'spot', valueUsd: spotUnits * gme, detail: `${spotUnits.toFixed(0)} GME from bond sales` },
     { id: 'usdg', label: 'USDG reserve', kind: 'stable', valueUsd: usdg, detail: 'Dry powder and margin top-ups' },
     { id: 'pol', label: `${TOKEN.symbol}-${QUOTE.symbol} LP`, kind: 'lp', valueUsd: pol, detail: 'Protocol-owned liquidity' },

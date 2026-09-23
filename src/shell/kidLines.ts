@@ -43,7 +43,7 @@ export const KID_GENERAL: KidLine[] = [
   'Positions or ban.',
   'Sir, this is a treasury.',
   'No cell, no sell.',
-  ["A 3x long is great until it isn't. The liquidation price lives in My Treasury.", 'point'],
+  ["A 2x long is great until it isn't. The liquidation price lives in My Treasury.", 'point'],
   'GME up, backing up. GME down, backing down. Leverage just makes it louder.',
   ['I am not a financial advisor. I am barely a kid in a suit.', 'shadesUp'],
   'Everything I know I learned on wallstreetbets. That is the risk disclosure.',

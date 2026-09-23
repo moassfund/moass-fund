@@ -276,6 +276,39 @@
   .field { height: 32px; font-size: 16px; } /* 16px stops iOS zoom-on-focus */
   .tab { padding: 7px 12px 6px; }
   .start-menu { width: 100vw; border-radius: 0; }
+  /* One column: at 390px the two-column split wraps every blurb onto three
+     lines and wastes the right half on five disabled links. */
+  .start-cols { grid-template-columns: 1fr; }
+  .start-col.right { border-left: none; border-top: 1px solid var(--red-200); }
+  /* 44px is the smallest reliable touch target; menu rows were 11px text in
+     ~22px of box. */
+  .start-item { padding: 9px 8px; font-size: 12px; min-height: 44px; }
+  .start-item b { font-size: 13px; }
+  .start-item .icon-tile { width: 32px; height: 32px; font-size: 17px; }
+  .start-foot button { padding: 8px 10px; min-height: 40px; }
+}
+
+/* ---------- touch ---------- */
+/* On a touch screen :hover latches after a tap and only clears when something
+   else is tapped, so the start button stays lit after the menu closes and menu
+   rows keep their selection highlight. Gate every hover affordance behind a
+   real pointer; :focus-visible still covers keyboards. */
+@media (hover: none) {
+  .start-btn:hover { filter: none; }
+  .start-btn[aria-expanded='true'] { filter: brightness(.82); }
+  .start-item:hover { background: none; color: var(--ink); }
+  .start-item.plain:hover { background: none; color: var(--red-900); }
+  .start-foot button:hover { background: none; }
+  .task-btn:hover { filter: none; }
+  .desk-icon:hover .icon-tile { filter: none; }
+}
+
+/* `touch-action: auto` leaves the 300ms double-tap-to-zoom wait on every
+   control, which reads as lag rather than as a deliberate delay. */
+.start-btn, .task-btn, .start-item, .start-foot button, .desk-icon,
+.btn, .tab, .title-bar-controls button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Chart placeholder before the indexer has enough points to draw a line. */

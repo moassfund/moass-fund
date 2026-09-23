@@ -1,12 +1,18 @@
-// Bridge-and-swap into GME, so somebody holding USDC on Base can subscribe to
-// the offering without leaving the desktop. Routing is LI.FI; the destination
-// is fixed to the reserve asset by address and is never a choice.
+// Swap into GME on Robinhood Chain, so somebody holding USDG or ETH here can
+// subscribe to the offering without leaving the desktop.
+//
+// One chain, deliberately. LI.FI routes in from other chains too, but the
+// audience for this is already on Robinhood Chain, and same-chain settles in
+// the transaction they sign: no bridge, no second leg, nothing to poll.
+//
+// Routing is LI.FI; the destination is the reserve asset by address and is
+// never a choice.
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAccount } from 'wagmi'
 import { getWalletClient, switchChain, waitForTransactionReceipt, readContract } from '@wagmi/core'
 import { erc20Abi, formatUnits, parseUnits, type Address } from 'viem'
-import { QUOTE } from '../config'
+import { CHAIN, QUOTE } from '../config'
 import { isMock } from '../protocol/hooks'
 import {
   GME_ADDRESS,
@@ -14,11 +20,10 @@ import {
   quoteLandsInGme,
   quoteToGme,
   tokensOn,
-  transferStatus,
   type LifiQuote,
   type LifiToken,
 } from '../protocol/lifi'
-import { PAY_FROM_CHAINS, wagmiConfig } from '../protocol/wagmi'
+import { wagmiConfig } from '../protocol/wagmi'
 import { dialogs } from '../shell/dialogStore'
 import { useWindowStore } from '../shell/windowStore'
 import { Callout, KV, StatusBar, fmtNum, fmtUsd, parseAmount } from '../ui'
@@ -30,15 +35,14 @@ const NATIVE = '0x0000000000000000000000000000000000000000'
  * What people actually hold, first.
  *
  * LI.FI returns its list in no order useful to a human, so an unsorted select
- * offers $COOL and sirloinUSDC above USDC. These are the assets somebody
- * funding a subscription is realistically holding; everything else keeps its
- * place behind them.
+ * offers $COOL and sirloinUSDC above USDG.
  */
-const COMMON = ['ETH', 'WETH', 'USDC', 'USDT', 'DAI', 'USDG', 'WBTC', 'cbBTC', 'MATIC', 'POL']
+const COMMON = ['ETH', 'WETH', 'USDG', 'USDC', 'USDT', 'DAI', 'WBTC', 'cbBTC']
 
-/** Enough of a list to find what you hold, short enough to scan. */
 function shortlist(tokens: LifiToken[]): LifiToken[] {
-  const priced = tokens.filter((t) => t.address.toLowerCase() === NATIVE || (t.priceUSD && Number(t.priceUSD) > 0))
+  const priced = tokens.filter(
+    (t) => t.address.toLowerCase() === NATIVE || (t.priceUSD && Number(t.priceUSD) > 0),
+  )
   const rank = (t: LifiToken) => {
     if (t.address.toLowerCase() === NATIVE) return -1
     const i = COMMON.indexOf(t.symbol.toUpperCase())
@@ -59,80 +63,36 @@ function shortlist(tokens: LifiToken[]): LifiToken[] {
 
 export default function GetGme() {
   const { address, chainId: walletChain } = useAccount()
-  // Default to the chain they are already on: no bridge, and it settles instantly.
-  const [fromChain, setFromChain] = useState<number>(PAY_FROM_CHAINS[0].id)
   const [tokenAddr, setTokenAddr] = useState<string>(NATIVE)
   const [amount, setAmount] = useState('')
   const [quote, setQuote] = useState<LifiQuote | null>(null)
   const [quoting, setQuoting] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
-  const [watching, setWatching] = useState<{ txHash: string; fromChain: number; tool?: string } | null>(null)
-  const [progress, setProgress] = useState<string | null>(null)
 
   const tokens = useQuery({
-    queryKey: ['lifi-tokens', fromChain],
-    queryFn: () => tokensOn(fromChain),
+    queryKey: ['lifi-tokens', GME_CHAIN_ID],
+    queryFn: () => tokensOn(GME_CHAIN_ID),
     staleTime: 10 * 60_000,
   })
 
   const list = useMemo(() => shortlist(tokens.data ?? []), [tokens.data])
   const token = list.find((t) => t.address.toLowerCase() === tokenAddr.toLowerCase()) ?? list[0]
 
-  // A new chain invalidates the chosen token and any quote priced against it.
-  useEffect(() => {
-    setTokenAddr(NATIVE)
-    setQuote(null)
-    setQuoteError(null)
-  }, [fromChain])
-
-  // Poll until the GME actually lands: the source transaction confirming only
-  // means the money left, not that it arrived.
-  useEffect(() => {
-    if (!watching) return
-    let live = true
-    const tick = async () => {
-      try {
-        const s = await transferStatus(watching)
-        if (!live) return
-        if (s.status === 'DONE') {
-          setWatching(null)
-          setProgress(null)
-          void dialogs.balloon('GME landed', `Your ${QUOTE.symbol} is on ${'Robinhood Chain'}. The offering is open.`, 'shrug')
-          return
-        }
-        if (s.status === 'FAILED') {
-          setWatching(null)
-          setProgress(null)
-          void dialogs.error('The transfer failed', s.message || 'LI.FI reported the route did not complete.')
-          return
-        }
-        setProgress(s.message || 'Bridging. This usually takes under a minute.')
-      } catch {
-        /* a polling blip must not kill the watch */
-      }
-    }
-    void tick()
-    const id = setInterval(tick, 6_000)
-    return () => {
-      live = false
-      clearInterval(id)
-    }
-  }, [watching])
+  // A quote is priced against one token and one amount; either changing voids it.
+  useEffect(() => setQuote(null), [tokenAddr, amount])
 
   const n = parseAmount(amount)
-  const decimals = token?.decimals ?? 18
   const canQuote = !!address && !!token && n > 0
 
   const getQuote = async () => {
     if (!canQuote || !token) return
     setQuoting(true)
     setQuoteError(null)
-    setQuote(null)
     try {
       const q = await quoteToGme({
-        fromChain,
+        fromChain: GME_CHAIN_ID,
         fromToken: token.address,
-        fromAmount: parseUnits(String(n), decimals).toString(),
+        fromAmount: parseUnits(String(n), token.decimals).toString(),
         fromAddress: address as string,
       })
       if (!quoteLandsInGme(q)) throw new Error('That route does not end in the reserve asset. Not taking it.')
@@ -147,15 +107,16 @@ export default function GetGme() {
   const execute = async () => {
     if (!quote?.transactionRequest || !address || !token) return
     const tr = quote.transactionRequest
+    const expected = Number(formatUnits(BigInt(quote.estimate.toAmount), 18))
 
     await dialogs.runTx({
       title: `Swapping to ${QUOTE.symbol}…`,
-      text: `${fmtNum(n, 4)} ${token.symbol} in, about ${fmtNum(Number(formatUnits(BigInt(quote.estimate.toAmount), 18)), 4)} ${QUOTE.symbol} out`,
+      text: `${fmtNum(n, 4)} ${token.symbol} in, about ${fmtNum(expected, 4)} ${QUOTE.symbol} out`,
       action: async () => {
-        if (walletChain !== fromChain) {
-          await switchChain(wagmiConfig, { chainId: fromChain as never })
+        if (walletChain !== GME_CHAIN_ID) {
+          await switchChain(wagmiConfig, { chainId: GME_CHAIN_ID as never })
         }
-        const wallet = await getWalletClient(wagmiConfig, { chainId: fromChain as never })
+        const wallet = await getWalletClient(wagmiConfig, { chainId: GME_CHAIN_ID as never })
         if (!wallet) throw new Error('Connect a wallet first.')
 
         // ERC-20 legs need an allowance for the route's spender. Native does not.
@@ -163,7 +124,7 @@ export default function GetGme() {
         if (token.address.toLowerCase() !== NATIVE && spender) {
           const needed = BigInt(quote.action.fromAmount)
           const current = (await readContract(wagmiConfig, {
-            chainId: fromChain as never,
+            chainId: GME_CHAIN_ID as never,
             address: token.address as Address,
             abi: erc20Abi,
             functionName: 'allowance',
@@ -178,7 +139,7 @@ export default function GetGme() {
               functionName: 'approve',
               args: [spender, needed],
             })
-            await waitForTransactionReceipt(wagmiConfig, { hash: approveHash, chainId: fromChain as never })
+            await waitForTransactionReceipt(wagmiConfig, { hash: approveHash, chainId: GME_CHAIN_ID as never })
           }
         }
 
@@ -189,20 +150,10 @@ export default function GetGme() {
           data: tr.data as `0x${string}`,
           value: tr.value ? BigInt(tr.value) : undefined,
         })
-        await waitForTransactionReceipt(wagmiConfig, { hash, chainId: fromChain as never })
-        // A same-chain swap settles in the transaction just mined. Only a
-        // bridge has a second leg to wait for, and polling /status for one
-        // that does not exist would sit on "Bridging" forever.
-        if (fromChain !== GME_CHAIN_ID) {
-          setWatching({ txHash: hash, fromChain, tool: quote.tool })
-          setProgress('Sent. Waiting for it to arrive on the other side.')
-        }
+        await waitForTransactionReceipt(wagmiConfig, { hash, chainId: GME_CHAIN_ID as never })
         return { hash }
       },
-      success:
-        fromChain === GME_CHAIN_ID
-          ? `Swapped. The ${QUOTE.symbol} is in your wallet.`
-          : `Sent. ${QUOTE.symbol} arrives shortly, this window will say when.`,
+      success: `Swapped. The ${QUOTE.symbol} is in your wallet.`,
     })
   }
 
@@ -215,8 +166,8 @@ export default function GetGme() {
     <>
       <div className="window-content stack">
         <Callout icon="🛒">
-          The offering takes {QUOTE.symbol} on Robinhood Chain. Swap into it from a balance you already
-          hold here, or bring funds from another chain and they arrive as {QUOTE.symbol}.
+          The offering is priced in {QUOTE.symbol}. Swap anything you already hold on {CHAIN.name} into it
+          here, in one transaction.
         </Callout>
 
         {!address && <Callout icon="🔌" warn>Connect a wallet to get a quote.</Callout>}
@@ -225,19 +176,11 @@ export default function GetGme() {
           <legend>You pay</legend>
           <div className="getgme-row">
             <label className="getgme-field">
-              <span className="muted">From chain</span>
-              <select className="field" value={fromChain} onChange={(e) => setFromChain(Number(e.target.value))}>
-                {PAY_FROM_CHAINS.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </label>
-            <label className="getgme-field">
               <span className="muted">Token</span>
               <select
                 className="field"
                 value={token?.address ?? NATIVE}
-                onChange={(e) => { setTokenAddr(e.target.value); setQuote(null) }}
+                onChange={(e) => setTokenAddr(e.target.value)}
                 disabled={tokens.isLoading || !list.length}
               >
                 {tokens.isLoading && <option>Loading…</option>}
@@ -246,17 +189,17 @@ export default function GetGme() {
                 ))}
               </select>
             </label>
+            <label className="getgme-field">
+              <span className="muted">Amount</span>
+              <input
+                className="field num"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </label>
           </div>
-          <label className="getgme-field" style={{ marginTop: 8 }}>
-            <span className="muted">Amount</span>
-            <input
-              className="field num"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => { setAmount(e.target.value); setQuote(null) }}
-            />
-          </label>
           <button type="button" className="btn" style={{ marginTop: 8 }} disabled={!canQuote || quoting} onClick={getQuote}>
             {quoting ? 'Finding a route…' : 'GET QUOTE'}
           </button>
@@ -271,29 +214,24 @@ export default function GetGme() {
             <KV
               rows={[
                 ['Route', quote.tool],
-                ['Arrives in', `about ${quote.estimate.executionDuration}s`],
                 ['Total cost', outUsd > 0 ? `${fmtUsd(inUsd - outUsd)} (${(cost * 100).toFixed(2)}%)` : 'unknown'],
-                ['Lands as', `${GME_ADDRESS.slice(0, 10)}… on Robinhood Chain`],
+                ['Lands as', `${GME_ADDRESS.slice(0, 10)}… on ${CHAIN.name}`],
               ]}
             />
-            <button type="button" className="btn-primary" style={{ marginTop: 8 }} disabled={!!watching} onClick={execute}>
-              {watching ? 'IN FLIGHT…' : `SWAP TO ${QUOTE.symbol}`}
+            <button type="button" className="btn-primary" style={{ marginTop: 8 }} onClick={execute}>
+              SWAP TO {QUOTE.symbol}
             </button>
           </fieldset>
         )}
 
-        {progress && <Callout icon="⏳">{progress}</Callout>}
-
         <Callout icon="⚠️" warn>
-          Routing is LI.FI, a third party. Quotes move with the market and the amount you receive is an
-          estimate, not a promise.
-          {fromChain !== GME_CHAIN_ID &&
-            ` Coming from another chain means the ${QUOTE.symbol} arrives in a second transaction you do not sign, so leave this window open until it says so.`}
+          Routing is LI.FI, a third party. Quotes move with the market, so the amount you receive is an
+          estimate rather than a promise, and a stale quote can fail outright.
           {isMock && ' Quotes here are real even in demo mode, because they come from LI.FI rather than the simulated protocol.'}
         </Callout>
       </div>
       <StatusBar>
-        <span>Destination: {QUOTE.symbol} on Robinhood Chain</span>
+        <span>{CHAIN.name} only</span>
         <button type="button" className="btn small" onClick={() => useWindowStore.getState().open('genesis')}>
           To the offering
         </button>

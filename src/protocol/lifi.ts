@@ -13,6 +13,12 @@
  * protocol actually holds, by address, on Robinhood Chain. "GME" is a reused
  * ticker with unrelated tokens on other chains, so the destination is never
  * selected, never matched by symbol, and never taken from an API response.
+ *
+ * Source and destination are the same chain, so there is no bridge and no
+ * second leg: the swap settles in the transaction the user signs. LI.FI can
+ * route in from other chains, and did in an earlier version of this window,
+ * but that needed a status poll and five more wagmi transports for an audience
+ * that is already here.
  */
 import { CHAIN } from '../config'
 
@@ -94,34 +100,6 @@ export async function quoteToGme(args: {
     fromAmount: args.fromAmount,
     integrator: INTEGRATOR,
   })
-}
-
-export type TransferState = 'PENDING' | 'DONE' | 'FAILED' | 'NOT_FOUND'
-
-/**
- * Where a cross-chain transfer has got to. The source transaction confirming
- * is not the end of the story: the GME lands on Robinhood Chain in a separate
- * transaction the user never signs, so the window has to keep watching.
- */
-export async function transferStatus(args: {
-  txHash: string
-  fromChain: number
-  tool?: string
-}): Promise<{ status: TransferState; receivingTxHash?: string; message?: string }> {
-  const body = await get<{
-    status?: string
-    substatusMessage?: string
-    receiving?: { txHash?: string }
-  }>('/status', {
-    txHash: args.txHash,
-    fromChain: String(args.fromChain),
-    toChain: String(GME_CHAIN_ID),
-    ...(args.tool ? { bridge: args.tool } : {}),
-  })
-  const raw = body.status ?? 'NOT_FOUND'
-  const status: TransferState =
-    raw === 'DONE' ? 'DONE' : raw === 'FAILED' ? 'FAILED' : raw === 'NOT_FOUND' ? 'NOT_FOUND' : 'PENDING'
-  return { status, receivingTxHash: body.receiving?.txHash, message: body.substatusMessage }
 }
 
 /** Guards against a response ever redirecting the payout somewhere else. */

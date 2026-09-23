@@ -1,7 +1,6 @@
 import { createConfig, http, type CreateConnectorFn } from 'wagmi'
 import { injected, walletConnect } from 'wagmi/connectors'
 import { defineChain } from 'viem'
-import { arbitrum, base, mainnet, optimism, polygon } from 'wagmi/chains'
 import { CHAIN, TOKEN } from '../config'
 
 export const robinhoodChain = defineChain({
@@ -94,42 +93,8 @@ if (projectId) {
   )
 }
 
-/**
- * Chains a swap into GME can start from.
- *
- * The protocol itself only ever touches Robinhood Chain. These exist so the
- * Get GME window can send the first leg from wherever the money already is:
- * a buyer holding USDC on Base cannot subscribe to the offering otherwise,
- * and telling them to go bridge somewhere else loses them.
- *
- * Deliberately a short list rather than everything LI.FI routes. Each chain
- * here is a transport wagmi keeps configured, and these five cover where
- * people actually hold liquid stables and ETH.
- *
- * Robinhood Chain is not in here because it is already the first entry of
- * PAY_FROM_CHAINS below: it is where the protocol lives, so it is configured
- * either way.
- */
-export const SOURCE_CHAINS = [mainnet, base, arbitrum, optimism, polygon] as const
-
-/**
- * Everywhere the Get GME window can start from, in the order it offers them.
- *
- * Robinhood Chain leads because it is the likeliest case and the cheapest:
- * somebody at the offering is already on this chain, and a USDG or ETH balance
- * here swaps to GME in one transaction with no bridge at all.
- */
-export const PAY_FROM_CHAINS = [robinhoodChain, ...SOURCE_CHAINS] as const
-
 export const wagmiConfig = createConfig({
-  chains: [robinhoodChain, ...SOURCE_CHAINS],
+  chains: [robinhoodChain],
   connectors,
-  transports: {
-    [robinhoodChain.id]: http(CHAIN.rpcUrl),
-    [mainnet.id]: http(),
-    [base.id]: http(),
-    [arbitrum.id]: http(),
-    [optimism.id]: http(),
-    [polygon.id]: http(),
-  },
+  transports: { [robinhoodChain.id]: http(CHAIN.rpcUrl) },
 })

@@ -10,6 +10,7 @@ import { QUOTE } from '../config'
 import { isMock } from '../protocol/hooks'
 import {
   GME_ADDRESS,
+  GME_CHAIN_ID,
   quoteLandsInGme,
   quoteToGme,
   tokensOn,
@@ -17,7 +18,7 @@ import {
   type LifiQuote,
   type LifiToken,
 } from '../protocol/lifi'
-import { SOURCE_CHAINS, wagmiConfig } from '../protocol/wagmi'
+import { PAY_FROM_CHAINS, wagmiConfig } from '../protocol/wagmi'
 import { dialogs } from '../shell/dialogStore'
 import { useWindowStore } from '../shell/windowStore'
 import { Callout, KV, StatusBar, fmtNum, fmtUsd, parseAmount } from '../ui'
@@ -58,7 +59,8 @@ function shortlist(tokens: LifiToken[]): LifiToken[] {
 
 export default function GetGme() {
   const { address, chainId: walletChain } = useAccount()
-  const [fromChain, setFromChain] = useState<number>(SOURCE_CHAINS[1].id) // Base
+  // Default to the chain they are already on: no bridge, and it settles instantly.
+  const [fromChain, setFromChain] = useState<number>(PAY_FROM_CHAINS[0].id)
   const [tokenAddr, setTokenAddr] = useState<string>(NATIVE)
   const [amount, setAmount] = useState('')
   const [quote, setQuote] = useState<LifiQuote | null>(null)
@@ -188,11 +190,19 @@ export default function GetGme() {
           value: tr.value ? BigInt(tr.value) : undefined,
         })
         await waitForTransactionReceipt(wagmiConfig, { hash, chainId: fromChain as never })
-        setWatching({ txHash: hash, fromChain, tool: quote.tool })
-        setProgress('Sent. Waiting for it to arrive on the other side.')
+        // A same-chain swap settles in the transaction just mined. Only a
+        // bridge has a second leg to wait for, and polling /status for one
+        // that does not exist would sit on "Bridging" forever.
+        if (fromChain !== GME_CHAIN_ID) {
+          setWatching({ txHash: hash, fromChain, tool: quote.tool })
+          setProgress('Sent. Waiting for it to arrive on the other side.')
+        }
         return { hash }
       },
-      success: `Sent. ${QUOTE.symbol} arrives shortly, this window will say when.`,
+      success:
+        fromChain === GME_CHAIN_ID
+          ? `Swapped. The ${QUOTE.symbol} is in your wallet.`
+          : `Sent. ${QUOTE.symbol} arrives shortly, this window will say when.`,
     })
   }
 
@@ -205,8 +215,8 @@ export default function GetGme() {
     <>
       <div className="window-content stack">
         <Callout icon="🛒">
-          The offering takes {QUOTE.symbol} on Robinhood Chain. Bring anything from another chain and it
-          arrives as {QUOTE.symbol}, in one transaction.
+          The offering takes {QUOTE.symbol} on Robinhood Chain. Swap into it from a balance you already
+          hold here, or bring funds from another chain and they arrive as {QUOTE.symbol}.
         </Callout>
 
         {!address && <Callout icon="🔌" warn>Connect a wallet to get a quote.</Callout>}
@@ -215,9 +225,9 @@ export default function GetGme() {
           <legend>You pay</legend>
           <div className="getgme-row">
             <label className="getgme-field">
-              <span className="muted">Chain</span>
+              <span className="muted">From chain</span>
               <select className="field" value={fromChain} onChange={(e) => setFromChain(Number(e.target.value))}>
-                {SOURCE_CHAINS.map((c) => (
+                {PAY_FROM_CHAINS.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
@@ -276,8 +286,9 @@ export default function GetGme() {
 
         <Callout icon="⚠️" warn>
           Routing is LI.FI, a third party. Quotes move with the market and the amount you receive is an
-          estimate, not a promise. Cross-chain transfers arrive in a second transaction you do not sign,
-          so leave this window open until it says the {QUOTE.symbol} landed.
+          estimate, not a promise.
+          {fromChain !== GME_CHAIN_ID &&
+            ` Coming from another chain means the ${QUOTE.symbol} arrives in a second transaction you do not sign, so leave this window open until it says so.`}
           {isMock && ' Quotes here are real even in demo mode, because they come from LI.FI rather than the simulated protocol.'}
         </Callout>
       </div>

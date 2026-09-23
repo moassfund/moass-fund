@@ -1,5 +1,7 @@
-// Swap into GME on Robinhood Chain, so somebody holding USDG or ETH here can
-// subscribe to the offering without leaving the desktop.
+// Swap into GME on Robinhood Chain so somebody holding USDG or ETH here can
+// subscribe to the offering, and back out again afterwards. Both directions,
+// because a window that only lets people in reads worse than one that admits
+// they can leave.
 //
 // One chain, deliberately. LI.FI routes in from other chains too, but the
 // audience for this is already on Robinhood Chain, and same-chain settles in
@@ -17,16 +19,17 @@ import { isMock } from '../protocol/hooks'
 import {
   GME_ADDRESS,
   GME_CHAIN_ID,
-  quoteLandsInGme,
-  quoteToGme,
+  quoteHasGmeOn,
+  quoteSwap,
   tokensOn,
   type LifiQuote,
   type LifiToken,
+  type Side,
 } from '../protocol/lifi'
 import { wagmiConfig } from '../protocol/wagmi'
 import { dialogs } from '../shell/dialogStore'
 import { useWindowStore } from '../shell/windowStore'
-import { Callout, KV, StatusBar, fmtNum, fmtUsd, parseAmount } from '../ui'
+import { Callout, KV, StatusBar, Tabs, fmtNum, fmtUsd, parseAmount } from '../ui'
 import './GetGme.css'
 
 const NATIVE = '0x0000000000000000000000000000000000000000'
@@ -63,6 +66,7 @@ function shortlist(tokens: LifiToken[]): LifiToken[] {
 
 export default function GetGme() {
   const { address, chainId: walletChain } = useAccount()
+  const [side, setSide] = useState<Side>('buy')
   const [tokenAddr, setTokenAddr] = useState<string>(NATIVE)
   const [amount, setAmount] = useState('')
   const [quote, setQuote] = useState<LifiQuote | null>(null)
@@ -78,10 +82,14 @@ export default function GetGme() {
   const list = useMemo(() => shortlist(tokens.data ?? []), [tokens.data])
   const token = list.find((t) => t.address.toLowerCase() === tokenAddr.toLowerCase()) ?? list[0]
 
-  // A quote is priced against one token and one amount; either changing voids it.
-  useEffect(() => setQuote(null), [tokenAddr, amount])
+  // A quote is priced against one side, token and amount; any change voids it.
+  useEffect(() => setQuote(null), [side, tokenAddr, amount])
 
   const n = parseAmount(amount)
+  const buying = side === 'buy'
+  /** The leg being spent, and so the one that needs an allowance. */
+  const payToken = buying ? token : { address: GME_ADDRESS, symbol: QUOTE.symbol, decimals: 18 }
+  const getToken = buying ? { symbol: QUOTE.symbol, decimals: 18 } : token
   const canQuote = !!address && !!token && n > 0
 
   const getQuote = async () => {
@@ -89,13 +97,15 @@ export default function GetGme() {
     setQuoting(true)
     setQuoteError(null)
     try {
-      const q = await quoteToGme({
-        fromChain: GME_CHAIN_ID,
-        fromToken: token.address,
-        fromAmount: parseUnits(String(n), token.decimals).toString(),
+      const q = await quoteSwap({
+        side,
+        otherToken: token.address,
+        amount: parseUnits(String(n), side === 'buy' ? token.decimals : 18).toString(),
         fromAddress: address as string,
       })
-      if (!quoteLandsInGme(q)) throw new Error('That route does not end in the reserve asset. Not taking it.')
+      if (!quoteHasGmeOn(q, side)) {
+        throw new Error(`That route does not ${side === 'buy' ? 'end in' : 'spend'} the reserve asset. Not taking it.`)
+      }
       setQuote(q)
     } catch (e) {
       setQuoteError(e instanceof Error ? e.message : 'No route found.')
@@ -107,11 +117,11 @@ export default function GetGme() {
   const execute = async () => {
     if (!quote?.transactionRequest || !address || !token) return
     const tr = quote.transactionRequest
-    const expected = Number(formatUnits(BigInt(quote.estimate.toAmount), 18))
+    const expected = Number(formatUnits(BigInt(quote.estimate.toAmount), getToken.decimals))
 
     await dialogs.runTx({
-      title: `Swapping to ${QUOTE.symbol}…`,
-      text: `${fmtNum(n, 4)} ${token.symbol} in, about ${fmtNum(expected, 4)} ${QUOTE.symbol} out`,
+      title: `Swapping to ${getToken.symbol}…`,
+      text: `${fmtNum(n, 4)} ${payToken.symbol} in, about ${fmtNum(expected, 4)} ${getToken.symbol} out`,
       action: async () => {
         if (walletChain !== GME_CHAIN_ID) {
           await switchChain(wagmiConfig, { chainId: GME_CHAIN_ID as never })
@@ -121,11 +131,11 @@ export default function GetGme() {
 
         // ERC-20 legs need an allowance for the route's spender. Native does not.
         const spender = quote.estimate.approvalAddress as Address | undefined
-        if (token.address.toLowerCase() !== NATIVE && spender) {
+        if (payToken.address.toLowerCase() !== NATIVE && spender) {
           const needed = BigInt(quote.action.fromAmount)
           const current = (await readContract(wagmiConfig, {
             chainId: GME_CHAIN_ID as never,
-            address: token.address as Address,
+            address: payToken.address as Address,
             abi: erc20Abi,
             functionName: 'allowance',
             args: [address as Address, spender],
@@ -134,7 +144,7 @@ export default function GetGme() {
             const approveHash = await wallet.writeContract({
               chain: null,
               account: wallet.account,
-              address: token.address as Address,
+              address: payToken.address as Address,
               abi: erc20Abi,
               functionName: 'approve',
               args: [spender, needed],
@@ -153,11 +163,11 @@ export default function GetGme() {
         await waitForTransactionReceipt(wagmiConfig, { hash, chainId: GME_CHAIN_ID as never })
         return { hash }
       },
-      success: `Swapped. The ${QUOTE.symbol} is in your wallet.`,
+      success: `Swapped. The ${getToken.symbol} is in your wallet.`,
     })
   }
 
-  const out = quote ? Number(formatUnits(BigInt(quote.estimate.toAmount), 18)) : 0
+  const out = quote ? Number(formatUnits(BigInt(quote.estimate.toAmount), getToken.decimals)) : 0
   const inUsd = Number(quote?.estimate.fromAmountUSD ?? 0)
   const outUsd = Number(quote?.estimate.toAmountUSD ?? 0)
   const cost = inUsd > 0 && outUsd > 0 ? (inUsd - outUsd) / inUsd : 0
@@ -166,17 +176,23 @@ export default function GetGme() {
     <>
       <div className="window-content stack">
         <Callout icon="🛒">
-          The offering is priced in {QUOTE.symbol}. Swap anything you already hold on {CHAIN.name} into it
-          here, in one transaction.
+          {buying
+            ? `The offering is priced in ${QUOTE.symbol}. Swap anything you already hold on ${CHAIN.name} into it here, in one transaction.`
+            : `Turn ${QUOTE.symbol} back into whatever you would rather hold. Same chain, one transaction.`}
         </Callout>
 
         {!address && <Callout icon="🔌" warn>Connect a wallet to get a quote.</Callout>}
 
+        <Tabs<Side>
+          tabs={[{ id: 'buy', label: `Get ${QUOTE.symbol}` }, { id: 'sell', label: `Sell ${QUOTE.symbol}` }]}
+          active={side}
+          onChange={(v) => { setSide(v); setAmount('') }}
+        >
         <fieldset>
-          <legend>You pay</legend>
+          <legend>You pay {buying ? '' : QUOTE.symbol}</legend>
           <div className="getgme-row">
             <label className="getgme-field">
-              <span className="muted">Token</span>
+              <span className="muted">{buying ? 'Token' : `Receive`}</span>
               <select
                 className="field"
                 value={token?.address ?? NATIVE}
@@ -190,7 +206,7 @@ export default function GetGme() {
               </select>
             </label>
             <label className="getgme-field">
-              <span className="muted">Amount</span>
+              <span className="muted">Amount{buying ? '' : ` of ${QUOTE.symbol}`}</span>
               <input
                 className="field num"
                 inputMode="decimal"
@@ -205,21 +221,23 @@ export default function GetGme() {
           </button>
         </fieldset>
 
+        </Tabs>
+
         {quoteError && <Callout icon="⚠️" warn>{quoteError}</Callout>}
 
         {quote && (
           <fieldset>
             <legend>You receive</legend>
-            <div className="getgme-out num">{fmtNum(out, 4)} {QUOTE.symbol}</div>
+            <div className="getgme-out num">{fmtNum(out, 4)} {getToken.symbol}</div>
             <KV
               rows={[
                 ['Route', quote.tool],
                 ['Total cost', outUsd > 0 ? `${fmtUsd(inUsd - outUsd)} (${(cost * 100).toFixed(2)}%)` : 'unknown'],
-                ['Lands as', `${GME_ADDRESS.slice(0, 10)}… on ${CHAIN.name}`],
+                [buying ? 'Lands as' : 'Spends', `${GME_ADDRESS.slice(0, 10)}… on ${CHAIN.name}`],
               ]}
             />
-            <button type="button" className="btn-primary" style={{ marginTop: 8 }} onClick={execute}>
-              SWAP TO {QUOTE.symbol}
+            <button type="button" className={buying ? 'btn-primary' : 'btn-danger'} style={{ marginTop: 8 }} onClick={execute}>
+              {buying ? `SWAP TO ${QUOTE.symbol}` : `SELL ${QUOTE.symbol}`}
             </button>
           </fieldset>
         )}
@@ -231,7 +249,7 @@ export default function GetGme() {
         </Callout>
       </div>
       <StatusBar>
-        <span>{CHAIN.name} only</span>
+        <span>{buying ? `Buying ${QUOTE.symbol}` : `Selling ${QUOTE.symbol}`} on {CHAIN.name}</span>
         <button type="button" className="btn small" onClick={() => useWindowStore.getState().open('genesis')}>
           To the offering
         </button>

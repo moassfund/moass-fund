@@ -23,7 +23,7 @@ export interface AppDef {
 export const APPS: AppDef[] = [
   { id: 'overview', title: 'Fund Overview', short: 'Fund Overview', blurb: 'Price, backing, APY, runway', icon: '📈', tint: '#e31b23', w: 760, h: 560, component: lazy(() => import('../apps/Overview')) },
   { id: 'genesis', title: 'Founding Offering - Setup Wizard', short: 'Founding Offering', blurb: `Get in before there is a market`, icon: '📜', tint: '#c8a02c', w: 560, h: 620, component: lazy(() => import('../apps/Genesis')) },
-  { id: 'getgme', title: `Get ${QUOTE.symbol} - Exchange Wizard`, short: `Get ${QUOTE.symbol}`, blurb: `Bring anything, leave with ${QUOTE.symbol}`, icon: '🛒', tint: '#2f8f6f', w: 520, h: 600, component: lazy(() => import('../apps/GetGme')) },
+  { id: 'getgme', title: `Swap ${QUOTE.symbol} - Exchange Wizard`, short: `Swap ${QUOTE.symbol}`, blurb: `In or out of ${QUOTE.symbol}, one transaction`, icon: '🛒', tint: '#2f8f6f', w: 520, h: 600, component: lazy(() => import('../apps/GetGme')) },
   { id: 'stake', title: 'Stake.exe', short: 'Stake.exe', blurb: 'Compound every 8 hours', icon: '💎', tint: '#2e9e2e', w: 440, h: 590, component: lazy(() => import('../apps/Stake')) },
   { id: 'bond', title: 'Bond Desk', short: 'Bond Desk', blurb: `${TOKEN.symbol} at a discount, vested`, icon: '🏦', tint: '#f8b636', w: 720, h: 540, component: lazy(() => import('../apps/BondDesk')) },
   { id: 'treasury', title: 'My Treasury', short: 'My Treasury', blurb: `The 2x ${QUOTE.symbol} long, live`, icon: '🗄️', tint: '#3a6ea5', w: 800, h: 580, component: lazy(() => import('../apps/Treasury')) },

@@ -9,10 +9,11 @@
  * The endpoints are public and unauthenticated. `integrator` is attribution,
  * not a key.
  *
- * DESTINATION IS FIXED. Everything here routes to the tokenised GME the
- * protocol actually holds, by address, on Robinhood Chain. "GME" is a reused
- * ticker with unrelated tokens on other chains, so the destination is never
- * selected, never matched by symbol, and never taken from an API response.
+ * THE GME SIDE IS FIXED. Whichever way the swap runs, the GME leg is the
+ * tokenised GME the protocol actually holds, by address, on Robinhood Chain.
+ * "GME" is a reused ticker with unrelated tokens on other chains, so it is
+ * never selected, never matched by symbol, and never taken from an API
+ * response. Only the other side is a choice.
  *
  * Source and destination are the same chain, so there is no bridge and no
  * second leg: the swap settles in the transaction the user signs. LI.FI can
@@ -80,32 +81,38 @@ export async function tokensOn(chainId: number): Promise<LifiToken[]> {
   return body.tokens?.[String(chainId)] ?? []
 }
 
+/** `buy` ends in GME; `sell` starts from it. */
+export type Side = 'buy' | 'sell'
+
 /**
- * A quote for `fromAmount` (already in the source token's smallest units) out
- * to GME on Robinhood Chain.
+ * A quote for `amount` (in the source token's smallest units), with GME pinned
+ * to whichever side `side` says.
  */
-export async function quoteToGme(args: {
-  fromChain: number
-  fromToken: string
-  fromAmount: string
+export async function quoteSwap(args: {
+  side: Side
+  /** The leg that is not GME. */
+  otherToken: string
+  amount: string
   fromAddress: string
 }): Promise<LifiQuote> {
+  const buying = args.side === 'buy'
   return get<LifiQuote>('/quote', {
-    fromChain: String(args.fromChain),
+    fromChain: String(GME_CHAIN_ID),
     toChain: String(GME_CHAIN_ID),
-    fromToken: args.fromToken,
-    toToken: GME_ADDRESS,
+    fromToken: buying ? args.otherToken : GME_ADDRESS,
+    toToken: buying ? GME_ADDRESS : args.otherToken,
     fromAddress: args.fromAddress,
     toAddress: args.fromAddress,
-    fromAmount: args.fromAmount,
+    fromAmount: args.amount,
     integrator: INTEGRATOR,
   })
 }
 
-/** Guards against a response ever redirecting the payout somewhere else. */
-export function quoteLandsInGme(q: LifiQuote): boolean {
-  return (
-    q.action.toToken.chainId === GME_CHAIN_ID &&
-    q.action.toToken.address.toLowerCase() === GME_ADDRESS.toLowerCase()
-  )
+/**
+ * Guards against a response quietly swapping a leg for something else. Buying
+ * must land in GME; selling must spend it.
+ */
+export function quoteHasGmeOn(q: LifiQuote, side: Side): boolean {
+  const leg = side === 'buy' ? q.action.toToken : q.action.fromToken
+  return leg.chainId === GME_CHAIN_ID && leg.address.toLowerCase() === GME_ADDRESS.toLowerCase()
 }

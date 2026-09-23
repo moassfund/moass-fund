@@ -104,6 +104,7 @@ export const KID_BY_APP: Record<AppId, KidLine[]> = {
   ],
   getgme: [
     'Bring whatever you have. It comes out the other side as GME.',
+    ['It goes the other way too. Nobody is locked in, which is the only reason to stay.', 'shadesUp'],
     ['Cross-chain means it arrives in a second transaction you never sign. Leave the window open.', 'point'],
     {
       text: "It looks like you're trying to fund a subscription. Would you like help?",

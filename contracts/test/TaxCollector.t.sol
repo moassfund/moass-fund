@@ -7,13 +7,16 @@ import {Constants} from "../src/Constants.sol";
 import {Wired} from "../src/abstract/Wired.sol";
 import {MockERC20, MockOracle, MockPair, MockRouter, MockPTeam} from "./mocks/Mocks.sol";
 
-/// @notice Where the 5% tax actually goes.
+/// @notice Where the trading tax actually goes.
 ///
 /// The headline the team needs to hear: the split is NOT fixed. It decays on
-/// pTEAM's vesting clock — `teamBps = 400 × (1 − vestedFraction)`. At launch
-/// that is 400 of the 500 bps, so **80% of every tax dollar goes to the team
-/// wallet**, reaching zero after the 30-day vest, after which the treasury
-/// takes all of it. There is no admin setter; the clock is the only input.
+/// pTEAM's vesting clock — `teamBps = TAX_TEAM_START_BPS × (1 − vestedFraction)`.
+/// At launch that is 80% of every tax dollar going to the team wallet,
+/// reaching zero after the 30-day vest, after which the treasury takes all of
+/// it. There is no admin setter; the clock is the only input.
+///
+/// Every figure below is derived from Constants. Restating the rate here is
+/// what made these tests fail the moment it moved from 5% to 3%.
 /// See `test_split_startsMostlyToTheTeamAndDecaysToNothing`.
 ///
 /// Conversions are doubly bounded: a size clip against pool depth, and a TWAP
@@ -65,23 +68,26 @@ contract TaxCollectorTest is Test {
     // ── The split ──
 
     function test_split_startsMostlyToTheTeamAndDecaysToNothing() public {
+        uint256 start = Constants.TAX_TEAM_START_BPS;
+        uint256 total = Constants.TAX_TOTAL_BPS;
+
         pTeam.setVestedFraction(0);
-        assertEq(collector.teamBps(), 400, "at launch: 400 of 500 bps, i.e. 80% of the tax");
-        assertEq(collector.treasuryBps(), 100);
+        assertEq(collector.teamBps(), start, "at launch the team takes the opening share");
+        assertEq(collector.treasuryBps(), total - start);
 
         pTeam.setVestedFraction(0.5e18);
-        assertEq(collector.teamBps(), 200, "half way through the vest");
-        assertEq(collector.treasuryBps(), 300);
+        assertEq(collector.teamBps(), start / 2, "half way through the vest");
+        assertEq(collector.treasuryBps(), total - start / 2);
 
         pTeam.setVestedFraction(1e18);
         assertEq(collector.teamBps(), 0, "fully vested: every tax dollar goes to the treasury");
-        assertEq(collector.treasuryBps(), 500);
+        assertEq(collector.treasuryBps(), total);
     }
 
     function test_split_hasNoAdminSetter() public {
         // The only input is the pTEAM clock. Nothing else can move the split.
         pTeam.setVestedFraction(0.25e18);
-        assertEq(collector.teamBps(), 300);
+        assertEq(collector.teamBps(), (Constants.TAX_TEAM_START_BPS * 3) / 4);
         assertEq(collector.teamBps() + collector.treasuryBps(), Constants.TAX_TOTAL_BPS);
     }
 
@@ -90,9 +96,11 @@ contract TaxCollectorTest is Test {
 
         collector.convert(1_000e9, 0);
 
-        // 1,000 MOASS at $1 = 1,000 USDG. 400/500 to the team.
-        assertEq(usdg.balanceOf(teamWallet), 800e6);
-        assertEq(usdg.balanceOf(treasury), 200e6);
+        // 1,000 MOASS at $1 = 1,000 USDG, split by the opening ratio.
+        uint256 proceeds = 1_000e6;
+        uint256 team = proceeds * Constants.TAX_TEAM_START_BPS / Constants.TAX_TOTAL_BPS;
+        assertEq(usdg.balanceOf(teamWallet), team);
+        assertEq(usdg.balanceOf(treasury), proceeds - team);
     }
 
     function test_convert_sendsEverythingToTreasuryOnceVested() public {

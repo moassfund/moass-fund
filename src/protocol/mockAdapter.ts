@@ -212,7 +212,7 @@ function snapshotAt(t: number, user?: StoredUser): ProtocolSnapshot {
     index: indexAt(t),
     rebaseRate,
     // Matches TAX_TOTAL_BPS in the contracts.
-    tradingTax: 0.05,
+    tradingTax: 0.03,
     apy: apyFromRebase(rebaseRate),
     roi5d: roiOverDays(rebaseRate, 5),
     epoch: { number: epochNo, lengthSec: EPOCH_MS / 1000, startedAt, endsAt: startedAt + EPOCH_MS },

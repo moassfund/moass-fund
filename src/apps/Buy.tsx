@@ -85,7 +85,7 @@ export default function Buy() {
             <button type="button" className="btn-primary" onClick={swap}>SWAP ON DEX</button>
             <div className="muted">
               {p.tradingTax > 0 ? (
-                <>Every buy and sell through the pool pays a {fmtPct(p.tradingTax, 0)} tax, already subtracted above. It goes to the treasury, not to us. Moving {TOKEN.symbol} between wallets is free. On top of that, AMM buys move the price against you and pay the pool fee: bigger order, worse fill.</>
+                <>Every buy and sell through the pool pays a {fmtPct(p.tradingTax, 0)} tax, already subtracted above. Most of it goes to the team wallet for the first thirty days and then none of it does, with the treasury taking a growing share until it takes all of it. Moving {TOKEN.symbol} between wallets is free. On top of that, AMM buys move the price against you and pay the pool fee: bigger order, worse fill.</>
               ) : (
                 <>AMM buys move the price against you, and an ordinary buy pays the pool fee. Bigger order, worse fill. The number above ignores both.</>
               )}

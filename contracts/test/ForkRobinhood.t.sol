@@ -158,7 +158,7 @@ contract ForkRobinhoodTest is Test {
         _launch();
         // enableTax registered the canonical pair through the real factory.
         assertTrue(moass.isTaxedPair(address(pair)));
-        assertEq(moass.taxTotalBps(), 500);
+        assertEq(moass.taxTotalBps(), Constants.TAX_TOTAL_BPS);
     }
 
     // ── A real launch ──

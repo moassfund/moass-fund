@@ -67,7 +67,7 @@ contract MOASSTest is Test {
         assertEq(moass.name(), "Moass Fund");
         assertEq(moass.symbol(), "MOASS");
         assertEq(moass.decimals(), 9, "9 decimals, OHM convention");
-        assertEq(moass.taxTotalBps(), 500, "5%");
+        assertEq(moass.taxTotalBps(), Constants.TAX_TOTAL_BPS, "matches Constants");
     }
 
     function test_mint_onlyTreasury() public {
@@ -127,14 +127,24 @@ contract MOASSTest is Test {
         assertEq(moass.balanceOf(taxCollector), 0);
     }
 
+    /// @dev Derived, never restated: these assertions used to hardcode 5% and
+    ///      broke the moment the rate moved.
+    uint256 internal constant TAXED = 1_000e9;
+    function _tax(uint256 amount) internal pure returns (uint256) {
+        return amount * Constants.TAX_TOTAL_BPS / Constants.BPS;
+    }
+    function _net(uint256 amount) internal pure returns (uint256) {
+        return amount - _tax(amount);
+    }
+
     function test_sellToPairIsTaxed() public {
         _enableTax();
 
         vm.prank(alice);
         moass.transfer(address(pair), 1_000e9);
 
-        assertEq(moass.balanceOf(address(pair)), 950e9, "pair receives 95%");
-        assertEq(moass.balanceOf(taxCollector), 50e9, "5% to the collector");
+        assertEq(moass.balanceOf(address(pair)), _net(TAXED), "pair receives the untaxed remainder");
+        assertEq(moass.balanceOf(taxCollector), _tax(TAXED), "the tax reaches the collector");
     }
 
     function test_buyFromPairIsTaxed() public {
@@ -145,8 +155,8 @@ contract MOASSTest is Test {
         vm.prank(address(pair));
         moass.transfer(bob, 1_000e9);
 
-        assertEq(moass.balanceOf(bob), 950e9, "buyer receives 95%");
-        assertEq(moass.balanceOf(taxCollector), 50e9);
+        assertEq(moass.balanceOf(bob), _net(TAXED), "buyer receives the untaxed remainder");
+        assertEq(moass.balanceOf(taxCollector), _tax(TAXED));
     }
 
     /// @dev The conservation property: nothing is created or destroyed by the
@@ -172,7 +182,7 @@ contract MOASSTest is Test {
         vm.prank(alice);
         moass.transfer(address(pair), 1_000e9);
 
-        assertEq(moass.balanceOf(taxCollector), 50e9, "exactly one 500bps leg, not two");
+        assertEq(moass.balanceOf(taxCollector), _tax(TAXED), "exactly one tax leg, not two");
     }
 
     function test_exemptSenderPaysNoTax() public {
@@ -206,7 +216,7 @@ contract MOASSTest is Test {
         vm.prank(bob);
         moass.transferFrom(alice, address(pair), 1_000e9);
 
-        assertEq(moass.balanceOf(taxCollector), 50e9, "the router path is taxed as well");
+        assertEq(moass.balanceOf(taxCollector), _tax(TAXED), "the router path is taxed as well");
     }
 
     // ── enableTax ──

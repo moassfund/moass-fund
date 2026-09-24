@@ -31,9 +31,16 @@ library Constants {
     uint256 internal constant STAKING_WARMUP_EPOCHS = 0; // TUNE
 
     // ── Trading tax (specs/tax.md, specs/mechanism.md §4) ──
-    uint256 internal constant TAX_TOTAL_BPS = 500;
-    /// @dev Revised 2026-07-12 (was 300): decay starts at 4%/1%.
-    uint256 internal constant TAX_TEAM_START_BPS = 400;
+    /// @dev 3% rather than the upstream 5%. A GME-paired reserve token is not
+    ///      the same trade as upstream's, and 5% each way is heavy enough to
+    ///      suppress the volume the treasury actually compounds from.
+    uint256 internal constant TAX_TOTAL_BPS = 300;
+    /// @dev MUST NOT EXCEED TAX_TOTAL_BPS. `treasuryBps()` is
+    ///      TAX_TOTAL_BPS - teamBps(), so a team start above the total
+    ///      underflows and bricks convert() permanently. Held at the upstream
+    ///      80/20 split: team opens on 2.4% and decays to 0 over the vest,
+    ///      treasury opens on 0.6% and ends with the whole 3%.
+    uint256 internal constant TAX_TEAM_START_BPS = 240;
     /// @dev Coupling: must exceed the v2 LP fee (30 bps) + max-clip price
     ///      impact (~50 bps at TAX_SWAP_MAX_CLIP_BPS = 50), or convert()
     ///      reverts under normal conditions. Keep DEV ≥ CLIP + 40 bps.

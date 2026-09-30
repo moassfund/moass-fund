@@ -186,6 +186,54 @@ async function gmeUsd(): Promise<number> {
   return gmeIsToken0 ? raw * scale : (1 / raw) * scale
 }
 
+/**
+ * GME's 24h move, read from the pool's own observations.
+ *
+ * This used to come out of the indexer's history file, which meant it read
+ * +0.00% until the indexer had been publishing for a day, and the indexer does
+ * not run before launch. The pool already stores the data: with a cardinality
+ * of ~1800 it reaches back well past a day, so the number is live from block
+ * one and owes nothing to off-chain state.
+ *
+ * Sampled over a minute at each end rather than as a 24h average, because the
+ * question is "what did it cost then, what does it cost now", not "what was
+ * the mean". Returns null when the pool cannot reach back far enough, which is
+ * every young pool, and the caller falls back to history.
+ */
+async function gmeChange24hFromPool(): Promise<number | null> {
+  try {
+    const c = client()
+    const [observed, token0] = await Promise.all([
+      c.readContract({
+        address: addr(CONTRACTS.gmeUsdgPool),
+        abi: v3PoolAbi,
+        functionName: 'observe',
+        args: [[86_460, 86_400, 60, 0]],
+      }),
+      c.readContract({ address: addr(CONTRACTS.gmeUsdgPool), abi: v3PoolAbi, functionName: 'token0' }),
+    ])
+    const cum = (observed as unknown as [bigint[], bigint[]])[0]
+    if (!cum || cum.length < 4) return null
+
+    // Average tick across a window is the difference of the cumulatives over it.
+    const tickThen = Number(cum[1] - cum[0]) / 60
+    const tickNow = Number(cum[3] - cum[2]) / 60
+
+    const gmeIsToken0 = (token0 as string).toLowerCase() === CONTRACTS.gme.toLowerCase()
+    const priceAt = (tick: number) => {
+      const raw = Math.pow(1.0001, gmeIsToken0 ? tick : -tick)
+      return raw * 10 ** (GME_DECIMALS - USDG_DECIMALS)
+    }
+    const then = priceAt(tickThen)
+    const now = priceAt(tickNow)
+    if (!Number.isFinite(then) || !Number.isFinite(now) || then <= 0) return null
+    return (now - then) / then
+  } catch {
+    // A pool too young to answer is not an error worth surfacing.
+    return null
+  }
+}
+
 // ── History ──────────────────────────────────────────────────────────────────
 
 /**
@@ -299,7 +347,7 @@ async function getSnapshot(): Promise<ProtocolSnapshot> {
     priceUsd,
   })
 
-  const gmeChange24h = change24h(history, usdPerGme)
+  const gmeChange24h = (await gmeChange24hFromPool()) ?? change24h(history, usdPerGme)
 
   return {
     genesis: await readGenesis(toBrowserTime),

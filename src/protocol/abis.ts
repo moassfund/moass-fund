@@ -106,6 +106,9 @@ export const v3PoolAbi = parseAbi([
   'function token0() view returns (address)',
   'function token1() view returns (address)',
   'function fee() view returns (uint24)',
+  // The pool's own ring buffer of observations. Reverts if it does not reach
+  // back as far as asked, so every call must be guarded.
+  'function observe(uint32[] secondsAgos) view returns (int56[] tickCumulatives, uint160[] secondsPerLiquidityCumulativeX128s)',
 ])
 
 /// The founding offering. `purchase` and `refund` take and return the reserve

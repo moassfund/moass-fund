@@ -243,9 +243,9 @@ export default function GetGme() {
         )}
 
         <Callout icon="⚠️" warn>
-          Routing is LI.FI, a third party. Quotes move with the market, so the amount you receive is an
-          estimate rather than a promise, and a stale quote can fail outright.
-          {isMock && ' Quotes here are real even in demo mode, because they come from LI.FI rather than the simulated protocol.'}
+          Swaps are routed through a third party. Quotes move with the market, so the amount you receive
+          is an estimate rather than a promise, and a stale one can fail outright.
+          {isMock && ' Quotes here are real even in demo mode, because they are priced live rather than by the simulated protocol.'}
         </Callout>
       </div>
       <StatusBar>

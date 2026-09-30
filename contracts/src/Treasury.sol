@@ -12,18 +12,27 @@ import {Constants} from "./Constants.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {Wired} from "./abstract/Wired.sol";
 
-/// @title Treasury — NetNet reserve treasury (specs/treasury.md)
+/// @title Treasury — Moass Fund reserve treasury (specs/treasury.md)
 /// @notice Custodies USDG (liquid + Morpho) and the canonical-pair POL LP;
 ///         sole MOASS minter of record. RFV (WAD USDG terms):
 ///           liquid + morpho × (1 − 2% haircut) + POL at 2·√(x·y) (Q14 —
 ///           treasury-owned MOASS valued at its 1 USDG floor, never market).
 ///         Morpho rebalance entrypoints are permissionless (Q12) and
 ///         precondition-checked: deployed fraction ≤ 70% after any deposit.
-/// @dev The haircut is prudence, not loss (Q16): a deposit lowers *measured*
-///      RFV by 2% of the moved amount — conservative accounting, no value
-///      leaves the treasury. With the 70% cap, the maximum understatement of
-///      reserves is 1.4%. The invariant suite exempts the rebalance from NAV
-///      monotonicity (bounded by the haircut); supply ≤ RFV is unconditional.
+/// @dev The haircut is measurement, not protection. Upstream the sleeve was a
+///      Morpho stablecoin lending vault, where "no value leaves the treasury"
+///      held and the 2% haircut against a 70% cap bounded the understatement
+///      at 1.4%. Here the sleeve is GmeDesk: a leveraged GME position run by
+///      the team multisig, which CAN go to zero. `test_aLiquidatedSleeveCuts
+///      BackingImmediately` proves it does.
+///
+///      So read MORPHO_CAP_BPS as a risk budget, not a safety margin: up to
+///      70% of reserves can be in a position whose entire value is at risk,
+///      and the 2% haircut does nothing about that. The haircut still keeps
+///      measured RFV conservative; it is not a loss bound.
+///
+///      The invariant suite exempts the rebalance from NAV monotonicity
+///      (bounded by the haircut); supply ≤ RFV is unconditional.
 contract Treasury is ITreasury, Wired {
     error NotMinter();
     error NotSpender();

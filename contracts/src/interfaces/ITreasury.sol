@@ -3,7 +3,7 @@
 // Moass Fund; see ../SOURCE.md for provenance and reference/ for the unmodified original.
 pragma solidity ^0.8.24;
 
-/// @title ITreasury — NetNet reserve treasury
+/// @title ITreasury — Moass Fund reserve treasury
 /// @notice Custodies USDG (liquid + Morpho-deployed) and the protocol-owned
 ///         canonical v2 LP; sole MOASS minter of record; computes RFV and
 ///         backingPerToken (specs/treasury.md).

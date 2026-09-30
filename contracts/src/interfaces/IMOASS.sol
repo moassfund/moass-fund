@@ -5,8 +5,8 @@ pragma solidity ^0.8.24;
 
 import {IERC20Metadata} from "./external/IERC20.sol";
 
-/// @title IMOASS — NetNet reserve token
-/// @notice ERC-20, 9 decimals, with a 5% (500 bps, immutable) fee-on-transfer
+/// @title IMOASS — Moass Fund reserve token
+/// @notice ERC-20, 9 decimals, with an immutable TAX_TOTAL_BPS fee-on-transfer
 ///         keyed to a mapping of AMM pair addresses (specs/tax.md):
 ///         transfers to a mapped pair (sell) or from a mapped pair (buy) are
 ///         taxed; wallet-to-wallet transfers are free. Tax accrues in MOASS to

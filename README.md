@@ -4,7 +4,9 @@ Moass Fund: an OHM-style reserve protocol on Robinhood Chain (id 4663), token
 MOASS / sMOASS, paired with tokenised GME, treasury running a leveraged GME
 position. The UI is a Windows-XP desktop.
 
-The contracts are written and tested but **not deployed to any public network
+The contracts are deployed on Robinhood Chain (chain 4663); see
+`contracts/deployments/4663.json`. The live deployment is a **throwaway test
+token**, not the real launch (see below
 yet**. Run them locally in one command, or start the desktop on simulated data
 and it shows a DEMO badge while it does.
 
@@ -72,7 +74,7 @@ along while `npm start` is running:
 npm run local fund <address>   give any account MOASS, GME, USDG and gas
 npm run local advance [n]      skip n epochs and rebase — watch staking balances grow
 npm run local vest             skip 2 days so bonds become claimable
-npm run local open             open a 3x position so the Treasury window has something in it
+npm run local open             open a position so the Treasury window has something in it
 npm run local close [pnl]      close it, e.g. `close 30` for +30%, `close -100` for a wipeout
 npm run local gme <price>      move the GME price, e.g. `gme 40` — every dollar figure follows
 npm run local status           what the protocol currently thinks
@@ -94,7 +96,7 @@ Stack: Vite, React 18, TypeScript, zustand, wagmi 2 + viem, TanStack Query, rech
 ## The contracts
 
 They live in [`contracts/`](contracts/) and they are written. `forge test` runs
-339 tests across 15 suites, including a fork test that deploys the whole
+344 tests across 16 suites, including a fork test that deploys the whole
 protocol against **live Robinhood Chain** using the real tokenised GME, the real
 USDG and the real Uniswap V2 factory.
 
@@ -109,7 +111,7 @@ for provenance and the AGPL obligation — **our contracts must be published**.
 contracts/
   reference/   NetNet's source, verified byte-identical to what is deployed
   src/         our fork: the same contracts renamed, plus GmeDesk
-  test/        336 tests, including fork tests against chain 4663
+  test/        344 tests, including fork tests against chain 4663
   script/      Deploy.s.sol (the wiring) and Launch.s.sol (the runner)
   tools/       fetch, verify-upstream, verify-rename, check-abis
 ```
@@ -183,10 +185,10 @@ now, which changes what they mean:
 | Constant | Inherited | What it means with a GME reserve |
 |---|---|---|
 | `GENESIS_PRICE_WAD` | 3 | 3 GME per MOASS, so roughly $70 a token at launch |
-| `GENESIS_HARD_CAP_WAD` | 50,000 | 50,000 GME, roughly $1.2M |
-| `GENESIS_MIN_RAISE_WAD` | 15,000 | 15,000 GME, roughly $350k |
+| `GENESIS_HARD_CAP_WAD` | 2,000 | 2,000 GME, roughly $48k |
+| `GENESIS_MIN_RAISE_WAD` | 625 | 625 GME, roughly $15k |
 | `PTEAM_STRIKE_WAD` | 1 | team pays 1 GME per MOASS, not $1 |
-| `MORPHO_CAP_BPS` | 7000 | **70% of reserves can sit in a 3x position.** Sized for a lending vault, not leverage — this one deserves a hard look |
+| `MORPHO_CAP_BPS` | 7000 | **70% of reserves can sit in a leveraged position that can go to zero.** Sized upstream for a stablecoin lending vault, not for leverage. The 2% haircut is measurement, not a loss bound |
 | `MORPHO_HAIRCUT_BPS` | 200 | 2% prudence markdown, likewise sized for lending |
 | `BOND_VEST` / `BOND_DISCOUNT_BPS` | 2 days / 3% | the UI copy now matches these |
 
@@ -200,7 +202,7 @@ The front end was built before the contracts existed. Most guesses were right:
 8-hour epochs, no staking warm-up, multiple simultaneous bonds per user. These
 did not survive and have been fixed:
 
-- **The 5% trading tax** was mentioned nowhere. It is now a real field on
+- **The trading tax** was mentioned nowhere. It is now a real field on
   `ProtocolSnapshot` and appears in Buy and the Prospectus.
 - **Bond capacity is per epoch**, not per day. "Left today" is now "Left this
   epoch".

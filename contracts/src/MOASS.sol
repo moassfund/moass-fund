@@ -9,8 +9,8 @@ import {IUniswapV3Factory} from "./interfaces/external/IUniswapV3.sol";
 import {Constants} from "./Constants.sol";
 import {Wired} from "./abstract/Wired.sol";
 
-/// @title MOASS — NetNet reserve token
-/// @notice ERC-20, 9 decimals, immutable 500 bps fee-on-transfer keyed to the
+/// @title MOASS — Moass Fund reserve token
+/// @notice ERC-20, 9 decimals, immutable TAX_TOTAL_BPS fee-on-transfer keyed to the
 ///         taxed AMM-pair mapping (specs/tax.md). Transfers to a mapped pair
 ///         (sell) or from a mapped pair (buy) accrue tax in MOASS to the
 ///         TaxCollector; wallet-to-wallet transfers are free. Minting is
@@ -125,7 +125,7 @@ contract MOASS is IMOASS, Wired {
         }
     }
 
-    /// @dev The fee-on-transfer core. Exactly one 500 bps tax per taxed leg;
+    /// @dev The fee-on-transfer core. Exactly one TAX_TOTAL_BPS tax per taxed leg;
     ///      sum of received + taxed always equals sent (specs/tax.md §5).
     function _transfer(address from, address to, uint256 value) internal {
         if (to == address(0)) revert ZeroAddress();

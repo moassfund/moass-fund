@@ -19,7 +19,8 @@ import {Wired} from "./abstract/Wired.sol";
 ///         canonical pool, clip-limited to TAX_SWAP_MAX_CLIP_BPS of pool MOASS
 ///         reserves and TWAP-bounded by TAX_SWAP_MAX_DEV_BPS, then splits
 ///         proceeds by the deterministic decay (mechanism §4):
-///         teamBps = 400 × (1 − v), treasuryBps = 500 − teamBps, where v is
+///         teamBps = TAX_TEAM_START_BPS × (1 − v), treasuryBps the rest of
+///         TAX_TOTAL_BPS, where v is
 ///         pTEAM's vestedFraction — one clock, no admin setter.
 contract TaxCollector is ITaxCollector, Wired {
     error ZeroAmount();

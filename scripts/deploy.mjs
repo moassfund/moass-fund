@@ -154,6 +154,16 @@ async function main() {
     if (!isAddress(value)) throw new Error(`${label} is not a valid address: ${value}`)
   }
 
+  // The desk promises funds can only reach venues fixed at construction, and
+  // the Prospectus repeats that to users. If the venue IS the manager, the
+  // promise is empty: openPosition just sends GME to the multisig. The venue
+  // set is immutable, so this cannot be corrected without a full redeploy.
+  if (deskVenue === teamWallet) {
+    warn('DESK_VENUE is the team wallet, so the desk can only "deploy" to its own')
+    warn('manager. The guarantee that funds reach a fixed venue and nowhere else')
+    warn('is void, and the venue set is IMMUTABLE after this deploy.')
+  }
+
   if (guardian === account.address || teamWallet === account.address) {
     warn('GUARDIAN and/or TEAM_WALLET are unset, so they default to the deployer.')
     warn('Fine for testnet. On mainnet these should be multisigs — the guardian')

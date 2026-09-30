@@ -3,13 +3,13 @@
 // Moass Fund; see ../SOURCE.md for provenance and reference/ for the unmodified original.
 pragma solidity ^0.8.24;
 
-/// @notice Minimal Uniswap v2 factory surface used by NetNet.
+/// @notice Minimal Uniswap v2 factory surface used here.
 interface IUniswapV2Factory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
     function createPair(address tokenA, address tokenB) external returns (address pair);
 }
 
-/// @notice Minimal Uniswap v2 pair surface used by NetNet (reserves + TWAP cumulatives).
+/// @notice Minimal Uniswap v2 pair surface used here (reserves + TWAP cumulatives).
 interface IUniswapV2Pair {
     function token0() external view returns (address);
     function token1() external view returns (address);
@@ -28,7 +28,7 @@ interface IUniswapV2Pair {
     function sync() external;
 }
 
-/// @notice Minimal Uniswap v2 router surface used by NetNet. The
+/// @notice Minimal Uniswap v2 router surface used here. The
 ///         fee-on-transfer-supporting swap path is mandatory for MOASS
 ///         (see specs/tax.md §2 — the v3 router reverts on FoT tokens).
 interface IUniswapV2Router02 {

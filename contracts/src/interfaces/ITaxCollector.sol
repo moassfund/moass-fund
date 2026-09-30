@@ -4,7 +4,7 @@
 pragma solidity ^0.8.24;
 
 /// @title ITaxCollector — trading-tax accrual and conversion
-/// @notice Receives the MOASS-denominated 5% fee-on-transfer accrual
+/// @notice Receives the MOASS-denominated fee-on-transfer accrual
 ///         (collect-then-convert; no re-entry into the pool during swaps).
 ///         A keeper entrypoint batch-swaps MOASS → USDG on the canonical pool
 ///         with TWAP-bounded slippage and clip-size limits, then splits USDG
@@ -25,7 +25,7 @@ interface ITaxCollector {
     ///         more than TAX_SWAP_MAX_DEV_BPS from the TWAP.
     function convert(uint256 moassAmount, uint256 minUsdgOutRaw) external;
 
-    /// @notice Current team share of the 500 bps total (300 → 0 over 30 days).
+    /// @notice Current team share of TAX_TOTAL_BPS, decaying to 0 over the vest.
     function teamBps() external view returns (uint256);
 
     /// @notice Current treasury share (500 − teamBps; 200 → 500).

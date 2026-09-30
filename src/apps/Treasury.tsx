@@ -27,6 +27,13 @@ export default function Treasury() {
   if (!p) return <div className="window-content muted">Loading treasury…</div>
 
   const { long, positions, totalUsd } = p.treasury
+  /**
+   * With no position open the desk reports zeros and a health of 1, so the
+   * tiles below would show a $0.00 liquidation price and a full green
+   * "100% above liquidation" bar for a position that does not exist. The
+   * hero already said FLAT; everything under it has to agree.
+   */
+  const flat = long.leverage <= 0 || long.sizeUnits <= 0
   const liqDistance = (long.markPrice - long.liqPrice) / long.markPrice
   const liqDrop = (long.entryPrice - long.liqPrice) / long.entryPrice
   const healthTone = long.health < 0.35 ? 'red' : long.health < 0.6 ? 'gold' : undefined
@@ -80,19 +87,21 @@ export default function Treasury() {
               <div className="stat-grid">
                 <StatTile variant="dark" label="Equity" value={fmtUsd(long.equityUsd)} sub="Marked live, see note" />
                 <StatTile label="PnL" value={fmtSignedUsd(long.pnlUsd)} sub={`${fmtSignedPct(long.pnlPct)} on collateral`} tone={toneOf(long.pnlUsd)} />
-                <StatTile label="Mark price" value={fmtUsd(long.markPrice)} sub={`${fmtSignedPct(p.gme.change24hPct)} 24h`} />
-                <StatTile label="Entry price" value={fmtUsd(long.entryPrice)} sub={`${fmtNum(long.sizeUnits, 0)} ${long.asset} exposure`} />
-                <StatTile variant="red" label="Liquidation price" value={fmtUsd(long.liqPrice)} sub="Position is wiped here" />
+                <StatTile label="Mark price" value={fmtUsd(long.markPrice)} sub={p.gme.change24hPct === null ? '24h move unavailable' : `${fmtSignedPct(p.gme.change24hPct)} 24h`} />
+                <StatTile label="Entry price" value={flat ? '--' : fmtUsd(long.entryPrice)} sub={flat ? 'nothing opened' : `${fmtNum(long.sizeUnits, 0)} ${long.asset} exposure`} />
+                <StatTile variant="red" label="Liquidation price" value={flat ? '--' : fmtUsd(long.liqPrice)} sub={flat ? 'no position to liquidate' : 'Position is wiped here'} />
                 <StatTile label="Notional" value={fmtUsd(long.notionalUsd)} sub="Total exposure" />
                 <StatTile label="Collateral" value={fmtUsd(long.collateralUsd)} sub="Posted by the treasury" />
               </div>
-              <div>
-                <div className="row between treasury-health-head">
-                  <span>Position health</span>
-                  <b className="num">{fmtPct(liqDistance, 1)} above liquidation</b>
+              {!flat && (
+                <div>
+                  <div className="row between treasury-health-head">
+                    <span>Position health</span>
+                    <b className="num">{fmtPct(liqDistance, 1)} above liquidation</b>
+                  </div>
+                  <ProgressBar value={long.health} tone={healthTone} label={`Distance to liquidation ${fmtPct(liqDistance, 1)}`} />
                 </div>
-                <ProgressBar value={long.health} tone={healthTone} label={`Distance to liquidation ${fmtPct(liqDistance, 1)}`} />
-              </div>
+              )}
               <Callout icon="🛟">
                 How this position works, plainly. The desk is run by the team multisig, not by an algorithm: it can only move funds to venues fixed when it was deployed, and can only send them back to the treasury, but a bad trade still loses the sleeve. Backing counts the collateral at cost, so the equity above can run ahead of backing while the trade is open and only lands when the position is closed. A liquidation takes that collateral with it.
               </Callout>
@@ -129,7 +138,7 @@ export default function Treasury() {
             </Tabs>
 
             <Callout warn icon="⚠️">
-              <b>The {fmtNum(long.leverage, 0)}x long can be liquidated.</b> If {long.asset} falls roughly {fmtPct(liqDrop, 0)} below the entry price, the position is closed by force. That slice of the backing is gone and backing per {TOKEN.symbol} drops. The rest of the treasury (spot {long.asset}, {STABLE.symbol}, LP) is not touched by a liquidation, but the spot and LP parts still move with {long.asset}. Diamond hands do not change the math.
+              <b>{flat ? `A leveraged ${long.asset} position can be liquidated.` : `The ${fmtNum(long.leverage, 1)}x long can be liquidated.`}</b> {flat ? `Nothing is open right now, so there is nothing to lose today. Once the desk opens one, a large enough ${long.asset} fall closes it by force.` : `If ${long.asset} falls roughly ${fmtPct(liqDrop, 0)} below the entry price, the position is closed by force.`} That slice of the backing is gone and backing per {TOKEN.symbol} drops. The rest of the treasury (spot {long.asset}, {STABLE.symbol}, LP) is not touched by a liquidation, but the spot and LP parts still move with {long.asset}. Diamond hands do not change the math.
               {isMock && <> Figures shown are simulated.</>}
             </Callout>
           </div>
@@ -138,7 +147,7 @@ export default function Treasury() {
       <StatusBar>
         <span>{positions.length} {positions.length === 1 ? 'object' : 'objects'}</span>
         <span>Total {fmtUsd(totalUsd)}</span>
-        <span>{long.asset} {fmtUsd(p.gme.priceUsd)} <span className={toneOf(p.gme.change24hPct)}>{fmtSignedPct(p.gme.change24hPct)}</span></span>
+        <span>{long.asset} {fmtUsd(p.gme.priceUsd)}{p.gme.change24hPct !== null && <> <span className={toneOf(p.gme.change24hPct)}>{fmtSignedPct(p.gme.change24hPct)}</span></>}</span>
       </StatusBar>
     </>
   )

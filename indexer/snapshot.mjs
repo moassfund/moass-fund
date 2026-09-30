@@ -36,8 +36,8 @@ import { privateKeyToAccount } from 'viem/accounts'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const OUT = resolve(HERE, '..', 'public', 'history.json')
 
-/** Keep roughly 30 days at one point per 8h epoch, with headroom. */
-const MAX_POINTS = 120
+/** Roughly 30 days. The cron is hourly, not per epoch: 120 was 5 days. */
+const MAX_POINTS = 720 // 30 days at the hourly cron in .github/workflows/history.yml
 const MOASS_DECIMALS = 9
 const GME_DECIMALS = 18
 const USDG_DECIMALS = 6

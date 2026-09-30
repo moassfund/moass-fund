@@ -62,11 +62,17 @@ export const WALLPAPER: {
 }
 
 // TODO: fill in at launch. Empty string = "coming soon" in the UI.
+//
+// tokenAddress is the exception: it is not a link to fill in by hand, it is
+// the deployed token, and it was empty while the token was live. Both the Buy
+// window and the Start menu read that emptiness as "not deployed yet" and told
+// people that anyone showing them a contract address was not us, which is the
+// exact opposite of the truth once it is deployed.
 export const LINKS = {
   x: '',
   telegram: '',
   dex: '',
   chart: '',
   docs: '',
-  tokenAddress: '',
-} as const
+  tokenAddress: envStr('VITE_ADDR_MOASS', ''),
+}

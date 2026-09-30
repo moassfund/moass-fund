@@ -4,7 +4,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "rewrites": [
+    {
+      "//": "Everything is the SPA except the indexer's feed. Without this exclusion /history.json returns 200 with index.html, the fetch parses HTML as JSON, and a feed that was never published is indistinguishable from a protocol with no history.",
+      "source": "/((?!history\\.json).*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",

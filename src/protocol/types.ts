@@ -103,7 +103,8 @@ export interface ProtocolSnapshot {
   epoch: Epoch
   runwayDays: number
   treasury: { totalUsd: number; long: LeveragedLong; positions: TreasuryPosition[] }
-  gme: { priceUsd: number; change24hPct: number }
+  /** `change24hPct` is null when neither the pool nor the history could answer. */
+  gme: { priceUsd: number; change24hPct: number | null }
   /** Oldest first, one point per epoch, ~30 days */
   history: HistoryPoint[]
   bonds: BondMarket[]

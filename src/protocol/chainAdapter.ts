@@ -347,7 +347,11 @@ async function getSnapshot(): Promise<ProtocolSnapshot> {
     priceUsd,
   })
 
-  const gmeChange24h = (await gmeChange24hFromPool()) ?? change24h(history, usdPerGme)
+  // Null, not zero, when neither the pool nor the history can answer: GME is an
+  // external token whose 24h move is essentially never exactly 0.00%, so a zero
+  // here is a failure wearing the costume of a quiet market.
+  const fromPool = await gmeChange24hFromPool()
+  const gmeChange24h = fromPool ?? (history.length ? change24h(history, usdPerGme) : null)
 
   return {
     genesis: await readGenesis(toBrowserTime),

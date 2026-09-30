@@ -15,6 +15,10 @@ function buildText(p: ProtocolSnapshot) {
   const epochHours = p.epoch.lengthSec / 3600
   const lev = p.treasury.long.leverage
   // "0x long" reads as broken. When the desk is flat, say so.
+  const deskLine =
+    lev > 0
+      ? `The core position is the ${fmtNum(lev, 1)}x ${G} long. ${G} up 10% means position equity up roughly ${fmtNum(10 * lev, 0)}%. ${G} down 10% means down roughly ${fmtNum(10 * lev, 0)}%. If ${G} falls to the liquidation price (now ${fmtUsd(p.treasury.long.liqPrice)}, mark ${fmtUsd(p.treasury.long.markPrice)}) the position is closed and its collateral is gone.`
+      : `The desk has no position open, so the treasury is holding ${G} spot. When it opens one, the leverage multiplies both directions: ${G} up 10% moves equity by roughly ten times the leverage, and the same downward, with a liquidation price below which the collateral is gone.`
   const leverageLine =
     lev > 0
       ? `The position is currently ${fmtNum(lev, 1)}x, and it can be liquidated.`
@@ -54,7 +58,7 @@ ${h('THE TREASURY')}
 Total ${fmtUsd(p.treasury.totalUsd)}. It holds:
 ${holdings}
 
-The core position is the ${lev}x ${G} long. ${G} up 10% means position equity up roughly ${fmtNum(10 * lev, 0)}%. ${G} down 10% means down roughly ${fmtNum(10 * lev, 0)}%. If ${G} falls to the liquidation price (now ${fmtUsd(p.treasury.long.liqPrice)}, mark ${fmtUsd(p.treasury.long.markPrice)}) the position is closed and its collateral is gone.
+${deskLine}
 
 Who runs it: the team multisig, not an algorithm. The desk contract can only send funds to venues fixed when it was deployed, and can only return them to the treasury, so nobody can withdraw it elsewhere. Within that, a bad trade still loses the sleeve. The treasury also caps how much of reserves can sit there at all. Backing counts that collateral at what it cost, never at what it is currently worth, so a winning position does not inflate backing until it is closed, and a losing one shows up the moment it is.
 

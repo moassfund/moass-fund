@@ -64,7 +64,7 @@ export default function Overview() {
             <KV
               rows={[
                 ['Spot price', <span className="num">{fmtUsd(p.gme.priceUsd)}</span>],
-                ['24h change', <b className={`num ${toneOf(p.gme.change24hPct)}`}>{fmtSignedPct(p.gme.change24hPct)}</b>],
+                ['24h change', p.gme.change24hPct === null ? <span className="muted">not available</span> : <b className={`num ${toneOf(p.gme.change24hPct)}`}>{fmtSignedPct(p.gme.change24hPct)}</b>],
                 [`1 ${TOKEN.symbol} in ${QUOTE.symbol}`, <span className="num">{fmtNum(p.priceGme, 4)} {QUOTE.symbol}</span>],
               ]}
             />

@@ -30,7 +30,7 @@ function Tray() {
             <b>${TOKEN.symbol}</b> {fmtUsd(data.priceUsd)}
           </span>
           <span className="tray-item hide-sm" title={`${QUOTE.symbol} price, 24h`}>
-            <b>{QUOTE.symbol}</b> {fmtUsd(data.gme.priceUsd)} <span className={toneOf(data.gme.change24hPct)}>{fmtSignedPct(data.gme.change24hPct, 1)}</span>
+            <b>{QUOTE.symbol}</b> {fmtUsd(data.gme.priceUsd)}{data.gme.change24hPct !== null && <> <span className={toneOf(data.gme.change24hPct)}>{fmtSignedPct(data.gme.change24hPct, 1)}</span></>}
           </span>
           <span className="tray-item hide-sm" title="Next rebase">⏱ {fmtCountdown(data.epoch.endsAt - now)}</span>
         </>

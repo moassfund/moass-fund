@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {TaxCollector} from "../src/TaxCollector.sol";
 import {Constants} from "../src/Constants.sol";
 import {Wired} from "../src/abstract/Wired.sol";
-import {MockERC20, MockOracle, MockPair, MockRouter, MockPTeam} from "./mocks/Mocks.sol";
+import {MockERC20, MockOracle, MockPair, MockRouter, MockPTeam, IERC20Like} from "./mocks/Mocks.sol";
 
 /// @notice Where the trading tax actually goes.
 ///
@@ -43,7 +43,7 @@ contract TaxCollectorTest is Test {
         usdg = new MockERC20("USDG", "USDG", 6);
         pair = new MockPair(address(moass), address(usdg));
         moassFirst = address(moass) < address(usdg);
-        router = new MockRouter(moass, usdg);
+        router = new MockRouter(IERC20Like(address(moass)), usdg);
         oracle = new MockOracle();
         pTeam = new MockPTeam();
 

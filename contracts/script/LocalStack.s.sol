@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Script, console} from "forge-std/Script.sol";
 import {DeployLib, Deployment, Externals} from "./Deploy.s.sol";
 import {GmeDesk} from "../src/GmeDesk.sol";
-import {MockERC20, MockPair, MockRouter, MockV2Factory, MockV3Factory, MockV3Pool} from "../test/mocks/Mocks.sol";
+import {MockERC20, MockPair, MockRouter, MockV2Factory, MockV3Factory, MockV3Pool, IERC20Like} from "../test/mocks/Mocks.sol";
 
 /// @title LocalStack — the whole protocol on a throwaway chain, in one call.
 ///
@@ -33,7 +33,7 @@ contract LocalStack is Script {
 
         MockV2Factory v2Factory = new MockV2Factory();
         MockV3Factory v3Factory = new MockV3Factory();
-        MockRouter router = new MockRouter(new MockERC20("unused", "X", 9), gme);
+        MockRouter router = new MockRouter(IERC20Like(address(new MockERC20("unused", "X", 9))), gme);
         MockV3Pool gmeUsdgPool = new MockV3Pool(address(gme), address(usdg), 10_000);
 
         address[] memory venues = new address[](1);

@@ -148,13 +148,20 @@ library DeployLib {
 
         // Protocol contracts hold MOASS in the ordinary course of business and
         // must not be taxed for it. The pair itself is never exemptible.
-        address[] memory exempt = new address[](6);
+        // The collector is the one protocol contract that SELLS into the
+        // canonical pair. Taxing its own swap takes TAX_TOTAL_BPS off the way
+        // in, so the pool receives less than convert() priced and the TWAP
+        // floor it sets for itself can never be met: every MOASS of tax, the
+        // team's share and the treasury's alike, would be stranded in it
+        // permanently. Live upstream exempts theirs.
+        address[] memory exempt = new address[](7);
         exempt[0] = d.treasury;
         exempt[1] = d.staking;
         exempt[2] = d.bondDepository;
         exempt[3] = d.genesisBond;
         exempt[4] = d.inverseBond;
         exempt[5] = d.premiumSeller;
+        exempt[6] = d.taxCollector;
         MOASS(d.moass).wire(
             d.treasury,
             d.taxCollector,

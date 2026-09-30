@@ -8,6 +8,13 @@ import {IPairOracle} from "../../src/interfaces/IPairOracle.sol";
 /// @dev Decimals are a constructor argument on purpose: the reserve swap turns a
 ///      6-decimal USDG into an 18-decimal GME, and that is exactly where unit
 ///      bugs will hide. Tests should be able to reproduce either.
+/// @notice Just enough of an ERC-20 for the router to work against either the
+///         mock or the real, taxing MOASS.
+interface IERC20Like {
+    function balanceOf(address) external view returns (uint256);
+    function transferFrom(address, address, uint256) external returns (bool);
+}
+
 contract MockERC20 {
     string public name;
     string public symbol;
@@ -444,16 +451,32 @@ contract MockV3Factory {
 
 /// @notice Uniswap V2 router stub. Swaps MOASS for USDG at a settable rate so
 ///         tests can produce a good fill, a bad fill, or a fee-on-transfer one.
+///
+/// @dev The fee-on-transfer part used to be a lie. It pulled the input to
+///      ITSELF and then priced the swap off the amount that was *requested*,
+///      so a token that taxes transfers into the pair looked free. That is the
+///      one thing this function's real counterpart exists to handle, and it is
+///      why the tax collector's swap could never have worked on chain while
+///      every test passed. It now sends the input where a router actually
+///      sends it, and prices what arrived.
 contract MockRouter {
-    MockERC20 public immutable moass;
+    IERC20Like public immutable moass;
     MockERC20 public immutable usdg;
+
+    /// @dev Where the input lands. Set it to the canonical pair to make
+    ///      transfer taxes apply the way they do in production.
+    address public pair;
 
     /// @dev WAD USDG per whole (9-decimal) MOASS. Defaults to $1.
     uint256 public rateWad = 1e18;
 
-    constructor(MockERC20 moass_, MockERC20 usdg_) {
+    constructor(IERC20Like moass_, MockERC20 usdg_) {
         moass = moass_;
         usdg = usdg_;
+    }
+
+    function setPair(address pair_) external {
+        pair = pair_;
     }
 
     function setRate(uint256 rateWad_) external {
@@ -468,9 +491,16 @@ contract MockRouter {
         uint256
     ) external {
         require(path.length == 2, "path");
-        require(moass.transferFrom(msg.sender, address(this), amountIn), "pull");
-        // amountIn is 9-decimal MOASS; out is 6-decimal USDG.
-        uint256 out = amountIn * rateWad / 1e9 / 1e12;
+        address sink = pair == address(0) ? address(this) : pair;
+        uint256 before = moass.balanceOf(sink);
+        require(moass.transferFrom(msg.sender, sink, amountIn), "pull");
+        // What the pool actually received, which is not what was asked for
+        // when the token taxes transfers into it.
+        uint256 received = moass.balanceOf(sink) - before;
+        // received is 9-decimal MOASS; rateWad is quote-per-whole-MOASS in WAD.
+        // The quote token's decimals are read rather than assumed: hardcoding
+        // 6 silently under-pays by 1e12 against an 18-decimal reserve.
+        uint256 out = received * rateWad / 1e9 / (10 ** (18 - usdg.decimals()));
         require(out >= amountOutMin, "MockRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         usdg.mint(to, out);
     }

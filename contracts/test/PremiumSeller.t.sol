@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {PremiumSeller} from "../src/PremiumSeller.sol";
 import {Constants} from "../src/Constants.sol";
-import {MockERC20, MockOracle, MockTreasury, MockPair, MockRouter, MockGenesisBond} from "./mocks/Mocks.sol";
+import {MockERC20, MockOracle, MockTreasury, MockPair, MockRouter, MockGenesisBond, IERC20Like} from "./mocks/Mocks.sol";
 
 /// @notice The mirror of the buyback: the standing ask into euphoria.
 ///
@@ -35,7 +35,7 @@ contract PremiumSellerTest is Test {
         usdg = new MockERC20("USDG", "USDG", 6);
         pair = new MockPair(address(moass), address(usdg));
         moassFirst = address(moass) < address(usdg);
-        router = new MockRouter(moass, usdg);
+        router = new MockRouter(IERC20Like(address(moass)), usdg);
         oracle = new MockOracle();
         treasury = new MockTreasury(moass, address(usdg));
         genesis = new MockGenesisBond();

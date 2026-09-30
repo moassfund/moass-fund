@@ -15,7 +15,7 @@ import {InverseBond} from "../src/InverseBond.sol";
 import {PTeam} from "../src/PTeam.sol";
 import {ShareCertificate} from "../src/ShareCertificate.sol";
 import {Constants} from "../src/Constants.sol";
-import {MockERC20, MockERC4626, MockPair, MockRouter, MockV2Factory, MockV3Factory} from "./mocks/Mocks.sol";
+import {MockERC20, MockERC4626, MockPair, MockRouter, MockV2Factory, MockV3Factory, IERC20Like} from "./mocks/Mocks.sol";
 
 /// @notice The whole protocol, deployed by the real deploy script and driven
 ///         through a full lifecycle: subscribe → finalise → stake → rebase →
@@ -63,7 +63,7 @@ contract IntegrationTest is Test {
 
         reserve = new MockERC20("USDG", "USDG", 6);
         vault = new MockERC4626(reserve);
-        router = new MockRouter(new MockERC20("unused", "X", 9), reserve);
+        router = new MockRouter(IERC20Like(address(new MockERC20("unused", "X", 9))), reserve);
 
         // The pair must exist before the protocol is deployed against it, so
         // MOASS's address is precomputed the way a real deploy would.

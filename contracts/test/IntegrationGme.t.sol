@@ -12,7 +12,8 @@ import {PairOracle} from "../src/PairOracle.sol";
 import {GenesisBond} from "../src/GenesisBond.sol";
 import {GmeDesk} from "../src/GmeDesk.sol";
 import {Constants} from "../src/Constants.sol";
-import {MockERC20, MockPair, MockRouter, MockV2Factory, MockV3Factory} from "./mocks/Mocks.sol";
+import {ITaxCollector} from "../src/interfaces/ITaxCollector.sol";
+import {MockERC20, MockPair, MockRouter, MockV2Factory, MockV3Factory, IERC20Like} from "./mocks/Mocks.sol";
 
 /// @notice Moass Fund as it will actually be: the reserve asset is GME, and the
 ///         treasury's yield sleeve is the leveraged desk instead of a lending
@@ -42,6 +43,7 @@ contract IntegrationGmeTest is Test {
     PairOracle internal oracle;
     GenesisBond internal genesis;
     GmeDesk internal desk;
+    MockRouter internal router;
 
     MockERC20 internal gme;
     MockPair internal pair;
@@ -71,9 +73,9 @@ contract IntegrationGmeTest is Test {
         // prediction at all.
         //
         // From here: pair n, desk n+1, v2Factory n+2, v3Factory n+3,
-        // router's token n+4, router n+5, then MOASS at n+6.
+        // router n+4, then MOASS at n+5.
         uint256 n = vm.getNonce(address(this));
-        address predictedMoass = vm.computeCreateAddress(address(this), n + 6);
+        address predictedMoass = vm.computeCreateAddress(address(this), n + 5);
 
         pair = new MockPair(predictedMoass, address(gme));
 
@@ -83,7 +85,10 @@ contract IntegrationGmeTest is Test {
 
         MockV2Factory v2Factory = new MockV2Factory();
         MockV3Factory v3Factory = new MockV3Factory();
-        MockRouter router = new MockRouter(new MockERC20("x", "x", 9), gme);
+        // The router must hold the REAL MOASS and send into the REAL pair, or
+        // the transfer tax never fires and convert() looks free.
+        router = new MockRouter(IERC20Like(predictedMoass), gme);
+        router.setPair(address(pair));
         v2Factory.setPair(pair.token0(), pair.token1(), address(pair));
 
         d = DeployLib.deploy(
@@ -354,4 +359,62 @@ contract IntegrationGmeTest is Test {
             staking.rebase();
         }
     }
+    /// @notice The tax collector must be able to convert what it collects.
+    ///
+    /// It is the one protocol contract that sells MOASS into the canonical
+    /// pair, so if it is not tax-exempt its own swap is taxed on the way in:
+    /// the pool receives TAX_TOTAL_BPS less than convert() priced, and the
+    /// TWAP floor it sets for itself can never be met. Every MOASS of tax,
+    /// the team's share and the treasury's alike, is then stranded in the
+    /// collector permanently.
+    ///
+    /// Live upstream exempts its collector. This asserts we do too.
+    function test_taxCollectorCanConvertWhatItCollects() public {
+        _raiseMinimum();
+        genesis.finalize();
+        skip(Constants.GENESIS_VEST);
+        vm.prank(alice);
+        genesis.claim();
+        _matureOracle();
+
+        assertTrue(moass.taxEnabled(), "tax is live after finalize");
+        assertTrue(
+            moass.isTaxExempt(d.taxCollector),
+            "the collector sells into the taxed pair, so it must be exempt from the tax"
+        );
+
+        // Fund the collector the way a real taxed sell does. The amount is
+        // read before the prank: an argument evaluated inside the call would
+        // consume it, and the transfer would run as this contract.
+        uint256 sell = moass.balanceOf(alice) / 2;
+        vm.prank(alice);
+        moass.transfer(address(pair), sell);
+        uint256 collected = moass.balanceOf(d.taxCollector);
+        assertGt(collected, 0, "a taxed sell funds the collector");
+
+        uint256 teamBefore = gme.balanceOf(teamWallet);
+        uint256 treasuryBefore = gme.balanceOf(address(treasury));
+
+        // convert() is clip-limited to a fraction of pool depth on purpose, so
+        // it is called in slices rather than all at once.
+        // The mock pays a settable rate; convert() floors at the TWAP, so an
+        // unset rate of $1 against a 3 GME TWAP fails for the wrong reason.
+        router.setRate(oracle.twapMoassUsdg());
+
+        (uint112 r0, uint112 r1,) = pair.getReserves();
+        uint256 moassReserve = pair.token0() == address(moass) ? uint256(r0) : uint256(r1);
+        uint256 clip = moassReserve * Constants.TAX_SWAP_MAX_CLIP_BPS / Constants.BPS;
+        uint256 slice = collected < clip ? collected : clip;
+        assertGt(slice, 0, "there is a convertible slice");
+
+        ITaxCollector(d.taxCollector).convert(slice, 0);
+
+        assertEq(moass.balanceOf(d.taxCollector), collected - slice, "the slice leaves the collector");
+        assertGt(
+            (gme.balanceOf(teamWallet) - teamBefore) + (gme.balanceOf(address(treasury)) - treasuryBefore),
+            0,
+            "proceeds reach the team and the treasury"
+        );
+    }
+
 }

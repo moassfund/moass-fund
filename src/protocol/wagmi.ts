@@ -79,7 +79,7 @@ if (projectId) {
         showQrModal: true,
         metadata: {
           name: TOKEN.name,
-          description: 'An OHM-style reserve protocol paired with GME.',
+          description: 'A protocol that accumulates tokenized GME and leverages it.',
           url: typeof window !== 'undefined' ? window.location.origin : 'https://moass.fund',
           icons: [],
         },

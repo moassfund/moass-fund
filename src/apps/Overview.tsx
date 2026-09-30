@@ -37,7 +37,13 @@ export default function Overview() {
           <StatTile label={`Backing per ${TOKEN.symbol}`} value={fmtUsd(p.backingUsd)} sub="treasury / supply" />
           <StatTile label="Premium" value={`${fmtNum(p.premium)}x`} sub="price over backing" />
           <StatTile label="APY" value={fmtPct(p.apy, 0)} sub={`${fmtPct(p.rebaseRate, 3)} per epoch`} tone="up" />
-          <StatTile variant="red" label="Treasury" value={fmtUsd(p.treasury.totalUsd)} sub={`${long.leverage}x ${QUOTE.symbol} long inside`} />
+          <StatTile variant="red" label="Treasury" value={fmtUsd(p.treasury.totalUsd)} sub={`${QUOTE.symbol} accumulated`} />
+          <StatTile
+            label="Leverage"
+            value={long.leverage > 0 ? `${fmtNum(long.leverage, 1)}x` : 'Flat'}
+            sub={long.leverage > 0 ? `liq. ${fmtUsd(long.liqPrice)} · ${fmtPct(long.health, 0)} health` : 'no position open'}
+            tone={long.leverage > 0 ? toneOf(long.pnlUsd) : undefined}
+          />
           <StatTile label="Market cap" value={fmtUsd(p.marketCapUsd)} sub={`${fmtCompact(p.totalSupply)} ${TOKEN.symbol}`} />
           <StatTile label="Staked" value={fmtPct(p.stakedPct, 0)} sub="of supply, diamond handed" />
           <StatTile label="Runway" value={`${fmtNum(p.runwayDays, 0)} days`} sub="at the current rebase rate" />

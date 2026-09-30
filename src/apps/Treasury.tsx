@@ -74,8 +74,8 @@ export default function Treasury() {
           <div className="treasury-main stack">
             <section className="treasury-hero stack">
               <div className="row between treasury-hero-head">
-                <h2 className="treasury-hero-title">{fmtNum(long.leverage, 0)}x {long.asset} LONG</h2>
-                <span className="treasury-badge">{fmtNum(long.leverage, 0)}x LEVERAGE</span>
+                <h2 className="treasury-hero-title">{long.leverage > 0 ? `${fmtNum(long.leverage, 1)}x ${long.asset} LONG` : `${long.asset} DESK, FLAT`}</h2>
+                <span className="treasury-badge">{long.leverage > 0 ? `${fmtNum(long.leverage, 1)}x LEVERAGE` : 'NO POSITION'}</span>
               </div>
               <div className="stat-grid">
                 <StatTile variant="dark" label="Equity" value={fmtUsd(long.equityUsd)} sub="Marked live, see note" />

@@ -14,6 +14,11 @@ const h = (title: string, rule = '=') => `${title}\n${rule.repeat(title.length)}
 function buildText(p: ProtocolSnapshot) {
   const epochHours = p.epoch.lengthSec / 3600
   const lev = p.treasury.long.leverage
+  // "0x long" reads as broken. When the desk is flat, say so.
+  const leverageLine =
+    lev > 0
+      ? `The position is currently ${fmtNum(lev, 1)}x, and it can be liquidated.`
+      : `No position is open right now, so the treasury holds ${G} spot.`
   const vest = [...new Set(p.bonds.map((b) => b.vestDays))].sort((a, b) => a - b)
   const vestText = vest.length > 1 ? `${vest[0]} to ${vest[vest.length - 1]} days` : `${vest[0] ?? 'a few'} days`
   const payWith = [...new Set(p.bonds.map((b) => b.asset))].join(', ') || `${G}, LP, ${STABLE.symbol}`
@@ -23,9 +28,15 @@ function buildText(p: ProtocolSnapshot) {
 Read this before you ape. It is short on purpose.${isMock ? '\nDemo build: every number below is simulated.' : ''}
 
 ${h('WHAT THIS IS')}
-${TOKEN.name} is an OHM fork on ${CHAIN.name}. ${M} is paired with tokenized ${G}, and the treasury runs a ${lev}x ${G} long.
+${TOKEN.name} is a protocol for accumulating ${G} on ${CHAIN.name}, and then leveraging it.
 
-Why: every other ${G}-paired coin is the same meme playing the same PvP for the same exit liquidity. A reserve protocol is a different game. It mints supply, sells some of it for assets, and ends up backed by a treasury instead of only its own LP.
+Every other ${G}-paired coin is a meme trading against its own liquidity pool. The float is the whole asset, the pool is the whole exit, and holders play PvP for it. Nothing accumulates.
+
+This does something else. It mints ${M} and sells it for ${G} through bonds, so the treasury grows in the asset it is named after. Trading fees are converted to ${G} and added. ${G} goes in and does not come back out, which is the opposite of a pool everyone is trying to drain.
+
+Then it leverages what it holds. The desk takes treasury ${G} as collateral and runs a long on top, so the fund gains more ${G} exposure than the ${G} it owns. ${leverageLine}
+
+That is the difference. A meme gives you exposure to itself. This gives you a growing claim on ${G}, geared.
 
 ${h('EMISSIONS')}
 New ${M} is minted every epoch. One epoch is ${fmtNum(epochHours, 0)} hours. The new supply goes two places: staking rewards and bonds. That is the whole machine.

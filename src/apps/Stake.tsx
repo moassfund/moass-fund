@@ -79,8 +79,8 @@ export default function Stake() {
                 [`Your ${TOKEN.staked}`, `${fmtNum(user.balances.sMOASS, 4)} (${fmtUsd(user.balances.sMOASS * p.priceUsd)})`],
               ]}
             />
-            <button type="button" className={staking ? 'btn-primary' : 'btn-danger'} disabled={n <= 0 || tooMuch} onClick={submit}>
-              {tooMuch ? 'Insufficient balance' : staking ? `STAKE ${TOKEN.symbol}` : 'UNSTAKE'}
+            <button type="button" className={staking ? 'btn-primary' : 'btn-danger'} disabled={!p.live.staking || n <= 0 || tooMuch} onClick={submit}>
+              {!p.live.staking ? 'Staking is not open yet' : tooMuch ? 'Insufficient balance' : staking ? `STAKE ${TOKEN.symbol}` : 'UNSTAKE'}
             </button>
           </div>
         </Tabs>

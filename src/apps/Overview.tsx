@@ -47,7 +47,11 @@ export default function Overview() {
           <StatTile label="Market cap" value={fmtUsd(p.marketCapUsd)} sub={`${fmtCompact(p.totalSupply)} ${TOKEN.symbol}`} />
           <StatTile label="Staked" value={fmtPct(p.stakedPct, 0)} sub="of supply, diamond handed" />
           <StatTile label="Runway" value={`${fmtNum(p.runwayDays, 0)} days`} sub="at the current rebase rate" />
-          <StatTile label="Next rebase" value={<Countdown to={p.epoch.endsAt} />} sub={`Epoch ${p.epoch.number}`} />
+          <StatTile
+            label="Next rebase"
+            value={p.live.staking ? <Countdown to={p.epoch.endsAt} /> : 'Not started'}
+            sub={p.live.staking ? `Epoch ${p.epoch.number}` : 'staking opens at launch'}
+          />
         </div>
 
         <section>

@@ -261,6 +261,8 @@ async function getSnapshot(): Promise<ProtocolSnapshot> {
 
   const [
     epochTuple,
+    stakingEnabled,
+    bondsEnabled,
     totalSupplyRaw,
     stakedRaw,
     indexRaw,
@@ -278,6 +280,8 @@ async function getSnapshot(): Promise<ProtocolSnapshot> {
     history,
   ] = await Promise.all([
     c.readContract({ address: addr(CONTRACTS.staking), abi: stakingAbi, functionName: 'epoch' }),
+    c.readContract({ address: addr(CONTRACTS.staking), abi: stakingAbi, functionName: 'enabled' }),
+    c.readContract({ address: addr(CONTRACTS.bondDepository), abi: bondDepositoryAbi, functionName: 'enabled' }),
     c.readContract({ address: addr(CONTRACTS.moass), abi: erc20Abi, functionName: 'totalSupply' }),
     c.readContract({ address: addr(CONTRACTS.sMoass), abi: sMoassAbi, functionName: 'circulatingSupply' }),
     c.readContract({ address: addr(CONTRACTS.sMoass), abi: sMoassAbi, functionName: 'index' }),
@@ -355,6 +359,10 @@ async function getSnapshot(): Promise<ProtocolSnapshot> {
 
   return {
     genesis: await readGenesis(toBrowserTime),
+    // Both ABIs have always declared enabled(); nothing ever called them, so
+    // the UI could not tell "not switched on yet" from "quiet". A countdown to
+    // a zero timestamp rendered as a live clock reading 00:00:00.
+    live: { staking: stakingEnabled as boolean, bonds: bondsEnabled as boolean },
     timestamp: now,
     priceUsd,
     priceGme,

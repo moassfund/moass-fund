@@ -108,6 +108,8 @@ export interface ProtocolSnapshot {
   /** Oldest first, one point per epoch, ~30 days */
   history: HistoryPoint[]
   bonds: BondMarket[]
+  /** Whether each half of the protocol has actually been switched on. */
+  live: { staking: boolean; bonds: boolean }
   /** Null only when no offering is configured; survives finalization for the vest. */
   genesis: GenesisOffering | null
 }

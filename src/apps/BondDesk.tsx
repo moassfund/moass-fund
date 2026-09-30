@@ -124,8 +124,8 @@ export default function BondDesk() {
                       This bond is priced at or above market. You would get more {TOKEN.symbol} buying on the pool. Bonds are floored at backing, so this happens when the premium is thin.
                     </Callout>
                   )}
-                  <button type="button" className={atPremium ? 'btn' : 'btn-primary'} disabled={n <= 0 || tooMuch || overCap} onClick={submitBond}>
-                    {tooMuch ? 'Insufficient balance' : overCap ? "Exceeds this epoch's capacity" : atPremium ? `BOND ${market.asset} ANYWAY` : `BOND ${market.asset}`}
+                  <button type="button" className={atPremium ? 'btn' : 'btn-primary'} disabled={!p.live.bonds || n <= 0 || tooMuch || overCap} onClick={submitBond}>
+                    {!p.live.bonds ? 'Bonding is not open yet' : tooMuch ? 'Insufficient balance' : overCap ? "Exceeds this epoch's capacity" : atPremium ? `BOND ${market.asset} ANYWAY` : `BOND ${market.asset}`}
                   </button>
                 </fieldset>
               )}

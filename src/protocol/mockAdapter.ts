@@ -200,6 +200,7 @@ function snapshotAt(t: number, user?: StoredUser): ProtocolSnapshot {
   history.push(pointAt(t))
   return {
     genesis: null,
+    live: { staking: true, bonds: true },
     timestamp: t,
     priceUsd,
     priceGme: priceUsd / gme,
